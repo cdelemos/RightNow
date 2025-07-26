@@ -6,7 +6,7 @@ Final comprehensive test of the Enhanced Real-Time Statute Lookup Engine
 import requests
 import json
 
-BACKEND_URL = "https://d41d4daa-9cdd-4f1d-8312-f7c9237f7509.preview.emergentagent.com/api"
+BACKEND_URL = "https://e7821669-5222-4266-9af9-21765c6f24ef.preview.emergentagent.com/api"
 
 # Login
 login_data = {"email": "sarah.johnson@university.edu", "password": "SecurePass123!"}
