@@ -31,6 +31,14 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production'
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
 
+# OpenAI Integration
+openai_api_key = os.environ.get('OPENAI_API_KEY')
+if not openai_api_key:
+    logging.warning("OPENAI_API_KEY not found in environment variables")
+    openai_integration = None
+else:
+    openai_integration = OpenAIIntegration(api_key=openai_api_key)
+
 # Create the main app
 app = FastAPI(title="RightNow Legal Education Platform", version="1.0.0")
 
