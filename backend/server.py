@@ -552,12 +552,178 @@ async def get_question_answers(question_id: str):
         data=[Answer(**answer) for answer in answers]
     )
 
-# Legal Myths endpoints
+# Enhanced Legal Myths endpoints for Myth-Busting Feed
 @api_router.post("/myths", response_model=APIResponse)
 async def create_legal_myth(myth_data: LegalMythCreate, current_user: User = Depends(get_current_user)):
     myth = LegalMyth(**myth_data.dict(), created_by=current_user.id)
     await db.legal_myths.insert_one(myth.dict())
     return APIResponse(success=True, message="Legal myth created successfully", data=myth.dict())
+
+@api_router.get("/myths/daily", response_model=APIResponse)
+async def get_daily_myth(current_user: User = Depends(get_current_user)):
+    """Get today's myth-busting content for the user"""
+    # Get a myth the user hasn't read today
+    today = datetime.utcnow().date()
+    
+    # Find myths user hasn't read yet
+    user_read_myths = await db.user_myth_progress.find(
+        {"user_id": current_user.id}
+    ).to_list(1000)
+    
+    read_myth_ids = [progress["myth_id"] for progress in user_read_myths]
+    
+    # Get unread myths
+    query = {
+        "status": LegalMythStatus.PUBLISHED.value,
+        "id": {"$nin": read_myth_ids}
+    }
+    
+    # If user has read all myths, reset and show all again
+    myth = await db.legal_myths.find_one(query)
+    if not myth:
+        # Reset - user has read all myths, start over
+        query = {"status": LegalMythStatus.PUBLISHED.value}
+        myth = await db.legal_myths.find_one(query)
+    
+    if not myth:
+        return APIResponse(success=False, message="No myths available")
+    
+    myth_obj = LegalMyth(**myth)
+    
+    # Track myth view
+    await track_myth_view(current_user.id, myth_obj.id)
+    
+    return APIResponse(
+        success=True,
+        message="Daily myth retrieved successfully",
+        data=myth_obj.dict()
+    )
+
+@api_router.get("/myths/feed", response_model=APIResponse)
+async def get_myth_feed(
+    page: int = 1,
+    per_page: int = 10,
+    category: Optional[StatuteCategory] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get myth feed for swipeable interface"""
+    query = {"status": LegalMythStatus.PUBLISHED.value}
+    if category:
+        query["category"] = category.value
+    
+    total = await db.legal_myths.count_documents(query)
+    skip = (page - 1) * per_page
+    myths = await db.legal_myths.find(query).sort("published_at", -1).skip(skip).limit(per_page).to_list(per_page)
+    
+    # Add user interaction data
+    processed_myths = []
+    for myth in myths:
+        myth_obj = LegalMyth(**myth)
+        myth_dict = myth_obj.dict()
+        
+        # Check if user has read this myth
+        user_progress = await db.user_myth_progress.find_one({
+            "user_id": current_user.id,
+            "myth_id": myth_obj.id
+        })
+        
+        myth_dict["user_has_read"] = bool(user_progress)
+        myth_dict["user_liked"] = user_progress.get("liked", False) if user_progress else False
+        processed_myths.append(myth_dict)
+    
+    return APIResponse(
+        success=True,
+        message="Myth feed retrieved successfully",
+        data=PaginatedResponse(
+            items=processed_myths,
+            total=total,
+            page=page,
+            per_page=per_page,
+            pages=math.ceil(total / per_page)
+        ).dict()
+    )
+
+@api_router.post("/myths/{myth_id}/read", response_model=APIResponse)
+async def mark_myth_as_read(myth_id: str, current_user: User = Depends(get_current_user)):
+    """Mark a myth as read and award XP"""
+    myth = await db.legal_myths.find_one({"id": myth_id})
+    if not myth:
+        raise HTTPException(status_code=404, detail="Myth not found")
+    
+    await track_myth_view(current_user.id, myth_id)
+    
+    return APIResponse(success=True, message="Myth marked as read", data={"xp_awarded": 15})
+
+@api_router.post("/myths/{myth_id}/like", response_model=APIResponse)
+async def like_myth(myth_id: str, current_user: User = Depends(get_current_user)):
+    """Like/unlike a myth"""
+    myth = await db.legal_myths.find_one({"id": myth_id})
+    if not myth:
+        raise HTTPException(status_code=404, detail="Myth not found")
+    
+    # Check if user has already interacted with this myth
+    existing_progress = await db.user_myth_progress.find_one({
+        "user_id": current_user.id,
+        "myth_id": myth_id
+    })
+    
+    if existing_progress:
+        # Toggle like status
+        new_liked_status = not existing_progress.get("liked", False)
+        await db.user_myth_progress.update_one(
+            {"user_id": current_user.id, "myth_id": myth_id},
+            {"$set": {"liked": new_liked_status}}
+        )
+        
+        # Update myth like count
+        if new_liked_status:
+            await db.legal_myths.update_one(
+                {"id": myth_id},
+                {"$inc": {"likes": 1}}
+            )
+            await award_xp(current_user.id, 5, "like_myth")
+        else:
+            await db.legal_myths.update_one(
+                {"id": myth_id},
+                {"$inc": {"likes": -1}}
+            )
+    else:
+        # Create new progress entry with like
+        from models import UserMythProgress
+        progress = UserMythProgress(
+            user_id=current_user.id,
+            myth_id=myth_id,
+            read_at=datetime.utcnow(),
+            liked=True
+        )
+        await db.user_myth_progress.insert_one(progress.dict())
+        
+        # Update myth like count
+        await db.legal_myths.update_one(
+            {"id": myth_id},
+            {"$inc": {"likes": 1}}
+        )
+        await award_xp(current_user.id, 20, "read_and_like_myth")  # Bonus XP for first interaction
+    
+    return APIResponse(success=True, message="Myth interaction updated")
+
+@api_router.post("/myths/{myth_id}/share", response_model=APIResponse)
+async def share_myth(myth_id: str, current_user: User = Depends(get_current_user)):
+    """Track myth sharing"""
+    myth = await db.legal_myths.find_one({"id": myth_id})
+    if not myth:
+        raise HTTPException(status_code=404, detail="Myth not found")
+    
+    # Update myth share count
+    await db.legal_myths.update_one(
+        {"id": myth_id},
+        {"$inc": {"shares": 1}}
+    )
+    
+    # Award XP for sharing
+    await award_xp(current_user.id, 10, "share_myth")
+    
+    return APIResponse(success=True, message="Myth share tracked", data={"xp_awarded": 10})
 
 @api_router.get("/myths", response_model=APIResponse)
 async def get_legal_myths(
@@ -566,6 +732,7 @@ async def get_legal_myths(
     page: int = 1,
     per_page: int = 20
 ):
+    """Legacy endpoint - get legal myths with basic filtering"""
     query = {"status": LegalMythStatus.PUBLISHED.value}
     if category:
         query["category"] = category.value
@@ -587,6 +754,34 @@ async def get_legal_myths(
             pages=math.ceil(total / per_page)
         ).dict()
     )
+
+# Helper functions for myth-busting feed
+async def track_myth_view(user_id: str, myth_id: str):
+    """Track when a user reads a myth"""
+    # Check if user has read this myth before
+    existing_progress = await db.user_myth_progress.find_one({
+        "user_id": user_id,
+        "myth_id": myth_id
+    })
+    
+    if not existing_progress:
+        # First time reading - create progress record and award XP
+        from models import UserMythProgress
+        progress = UserMythProgress(user_id=user_id, myth_id=myth_id)
+        await db.user_myth_progress.insert_one(progress.dict())
+        await award_xp(user_id, 15, "read_myth")
+        
+        # Update myth view count
+        await db.legal_myths.update_one(
+            {"id": myth_id},
+            {"$inc": {"views": 1}}
+        )
+    else:
+        # Update last read time
+        await db.user_myth_progress.update_one(
+            {"user_id": user_id, "myth_id": myth_id},
+            {"$set": {"read_at": datetime.utcnow()}}
+        )
 
 # Simulation endpoints
 @api_router.get("/simulations", response_model=APIResponse)
