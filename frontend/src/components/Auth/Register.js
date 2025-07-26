@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import Logo from '../Layout/Logo';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -18,11 +19,11 @@ const Register = () => {
   const navigate = useNavigate();
 
   const userTypes = [
-    { value: 'undergraduate', label: '🎓 Undergraduate Student' },
-    { value: 'graduate', label: '📚 Graduate Student' },
-    { value: 'law_student', label: '⚖️ Law Student' },
-    { value: 'professor', label: '👨‍🏫 Professor/Educator' },
-    { value: 'general', label: '👤 General Public' }
+    { value: 'undergraduate', label: 'Undergraduate Student', icon: '🎓', color: 'bg-blue-100 text-blue-700' },
+    { value: 'graduate', label: 'Graduate Student', icon: '📚', color: 'bg-purple-100 text-purple-700' },
+    { value: 'law_student', label: 'Law Student', icon: '⚖️', color: 'bg-sage-100 text-sage-700' },
+    { value: 'professor', label: 'Professor/Educator', icon: '👨‍🏫', color: 'bg-emerald-100 text-emerald-700' },
+    { value: 'general', label: 'General Public', icon: '👤', color: 'bg-gray-100 text-gray-700' }
   ];
 
   const handleChange = (e) => {
@@ -72,152 +73,186 @@ const Register = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sage-50 to-emerald-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <div className="mx-auto h-20 w-20 flex items-center justify-center rounded-full bg-green-100">
-              <span className="text-3xl">✅</span>
+          <div className="text-center bg-white rounded-3xl shadow-sage-lg p-8 border border-sage-100">
+            <div className="mx-auto h-20 w-20 flex items-center justify-center rounded-full bg-emerald-100 mb-6 animate-bounce-soft">
+              <span className="text-4xl">🎉</span>
             </div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Registration Successful!
+            <h2 className="text-3xl font-bold text-sage-800 mb-4">
+              Welcome aboard! 🚀
             </h2>
-            <p className="mt-2 text-center text-sm text-green-600">
-              Your account has been created. Redirecting to login...
+            <p className="text-sage-600 mb-6">
+              Your account has been created successfully. Get ready to level up your legal knowledge!
             </p>
+            <div className="inline-flex items-center bg-sage-100 rounded-xl px-4 py-2">
+              <span className="animate-pulse text-sage-700">Redirecting to login...</span>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  const selectedUserType = userTypes.find(type => type.value === formData.user_type);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sage-50 to-emerald-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-20 w-20 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-700">
-            <span className="text-3xl">⚖️</span>
+        <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <Logo size="xl" showText={true} />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Join RightNow
+          <h2 className="text-3xl font-bold text-sage-800">
+            Join the community! 🎓
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Start your legal education journey
+          <p className="mt-2 text-sage-600">
+            Start your legal education journey today
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleChange}
-              />
+        
+        <div className="bg-white rounded-3xl shadow-sage-lg p-8 border border-sage-100">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-sage-700 mb-2">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-sage-700 mb-2">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  placeholder="Choose a username"
+                  value={formData.username}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="user_type" className="block text-sm font-medium text-sage-700 mb-2">
+                  I am a...
+                </label>
+                <div className="relative">
+                  <select
+                    id="user_type"
+                    name="user_type"
+                    className="w-full px-4 py-3 border border-sage-200 bg-sage-50/50 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 appearance-none"
+                    value={formData.user_type}
+                    onChange={handleChange}
+                  >
+                    {userTypes.map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.icon} {type.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-5 h-5 text-sage-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                {selectedUserType && (
+                  <div className={`mt-2 inline-flex items-center px-3 py-1 rounded-lg text-xs ${selectedUserType.color}`}>
+                    <span className="mr-1">{selectedUserType.icon}</span>
+                    {selectedUserType.label}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-sage-700 mb-2">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-sage-700 mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Choose a username"
-                value={formData.username}
-                onChange={handleChange}
-              />
-            </div>
+            {error && (
+              <div className="bg-red-50/80 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm backdrop-blur-sm animate-pulse-gentle">
+                <div className="flex items-center">
+                  <span className="text-red-500 mr-2">⚠️</span>
+                  {error}
+                </div>
+              </div>
+            )}
 
             <div>
-              <label htmlFor="user_type" className="block text-sm font-medium text-gray-700">
-                I am a...
-              </label>
-              <select
-                id="user_type"
-                name="user_type"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={formData.user_type}
-                onChange={handleChange}
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-white font-medium rounded-xl bg-gradient-to-r from-sage-500 to-sage-600 hover:from-sage-600 hover:to-sage-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sage-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 shadow-sage"
               >
-                {userTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
+                {loading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                    Creating account...
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <span className="mr-2">🎉</span>
+                    Create account
+                  </div>
+                )}
+              </button>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Create a password"
-                value={formData.password}
-                onChange={handleChange}
-              />
+            <div className="text-center">
+              <Link
+                to="/login"
+                className="font-medium text-sage-600 hover:text-sage-500 transition-colors duration-200"
+              >
+                Already have an account? <span className="text-sage-700 font-semibold">Sign in!</span> 👋
+              </Link>
             </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating account...' : 'Create account'}
-            </button>
-          </div>
-
-          <div className="text-center">
-            <Link
-              to="/login"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Already have an account? Sign in
-            </Link>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
