@@ -11,6 +11,9 @@ import bcrypt
 import jwt
 from datetime import datetime, timedelta
 import math
+import json
+import re
+from emergentintegrations import OpenAIIntegration
 
 # Import our models
 from models import *
