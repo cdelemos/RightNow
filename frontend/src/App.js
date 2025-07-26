@@ -142,7 +142,7 @@ function App() {
             } />
             <Route path="/questions" element={
               <ProtectedRoute>
-                <QuestionsPage />
+                <CommunityQA />
               </ProtectedRoute>
             } />
             <Route path="/myths" element={
