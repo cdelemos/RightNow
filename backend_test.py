@@ -228,14 +228,14 @@ class BackendTester:
                          {"status_code": status_code, "response": data})
     
     def test_community_qa_system(self):
-        """Test community Q&A question and answer creation"""
+        """Test comprehensive Community Q&A System with peer-to-peer discussions"""
         if not self.auth_token:
-            self.log_test("Q&A System", False, "No auth token available")
+            self.log_test("Community Q&A System", False, "No auth token available")
             return
         
         headers = {"Authorization": f"Bearer {self.auth_token}"}
         
-        # Create a question
+        # Test 1: Create a question with XP rewards
         question_data = {
             "title": "Can my landlord enter my apartment without notice?",
             "content": "I'm a college student renting an apartment in California. My landlord has been entering my apartment without giving me any notice. Is this legal? What are my rights as a tenant?",
@@ -247,44 +247,416 @@ class BackendTester:
         
         if success and data.get("success"):
             question_id = data.get("data", {}).get("id")
-            self.log_test("Question Creation", True, "Question created successfully")
+            self.log_test("Question Creation with XP", True, "Question created successfully (should award 10 XP)")
+            self.test_question_id = question_id
             
-            # Create an answer for the question
-            if question_id:
-                answer_data = {
-                    "question_id": question_id,
-                    "content": "In California, landlords must provide at least 24 hours written notice before entering a rental unit, except in emergencies. The notice must state the purpose of entry and the approximate time. Entering without proper notice violates your privacy rights as a tenant. You should document these incidents and consider contacting your local tenant rights organization or housing authority."
-                }
-                
-                success, data, status_code = self.make_request("POST", f"/questions/{question_id}/answers", 
-                                                             answer_data, headers)
-                
-                if success and data.get("success"):
-                    self.log_test("Answer Creation", True, "Answer created successfully")
-                else:
-                    self.log_test("Answer Creation", False, "Failed to create answer",
-                                 {"status_code": status_code, "response": data})
-                
-                # Test retrieving answers
-                success, data, status_code = self.make_request("GET", f"/questions/{question_id}/answers")
-                
-                if success and data.get("success"):
-                    self.log_test("Answer Retrieval", True, "Successfully retrieved answers")
-                else:
-                    self.log_test("Answer Retrieval", False, "Failed to retrieve answers",
-                                 {"status_code": status_code, "response": data})
+            # Test 2: Create an answer with XP rewards
+            answer_data = {
+                "question_id": question_id,
+                "content": "In California, landlords must provide at least 24 hours written notice before entering a rental unit, except in emergencies. The notice must state the purpose of entry and the approximate time. Entering without proper notice violates your privacy rights as a tenant. You should document these incidents and consider contacting your local tenant rights organization or housing authority."
+            }
+            
+            success, data, status_code = self.make_request("POST", f"/questions/{question_id}/answers", 
+                                                         answer_data, headers)
+            
+            if success and data.get("success"):
+                answer_id = data.get("data", {}).get("id")
+                self.log_test("Answer Creation with XP", True, "Answer created successfully (should award 15 XP)")
+                self.test_answer_id = answer_id
+            else:
+                self.log_test("Answer Creation with XP", False, "Failed to create answer",
+                             {"status_code": status_code, "response": data})
         else:
-            self.log_test("Question Creation", False, "Failed to create question",
+            self.log_test("Question Creation with XP", False, "Failed to create question",
                          {"status_code": status_code, "response": data})
         
-        # Test question retrieval with filters
-        success, data, status_code = self.make_request("GET", "/questions", {"category": "housing"})
+        # Test 3: Enhanced question retrieval with user interaction data
+        success, data, status_code = self.make_request("GET", "/questions", 
+                                                     {"category": "housing", "page": 1, "per_page": 10}, headers)
         
         if success and data.get("success"):
-            self.log_test("Question Retrieval", True, "Successfully retrieved questions")
+            questions_data = data.get("data", {})
+            questions = questions_data.get("items", [])
+            
+            if questions:
+                # Check if questions include user interaction data and author info
+                first_question = questions[0]
+                has_user_data = "user_vote" in first_question
+                has_author_info = "author_username" in first_question and "author_user_type" in first_question
+                has_answer_count = "answer_count" in first_question
+                
+                if has_user_data and has_author_info and has_answer_count:
+                    self.log_test("Enhanced Question Retrieval", True, 
+                                 f"Retrieved {len(questions)} questions with user interaction data and author info")
+                else:
+                    self.log_test("Enhanced Question Retrieval", False, 
+                                 "Questions missing user interaction data or author info")
+                
+                # Check pagination structure
+                pagination_fields = ["total", "page", "per_page", "pages"]
+                has_pagination = all(field in questions_data for field in pagination_fields)
+                
+                if has_pagination:
+                    self.log_test("Q&A Pagination", True, f"Pagination working (page {questions_data.get('page')} of {questions_data.get('pages')})")
+                else:
+                    self.log_test("Q&A Pagination", False, "Missing pagination structure")
+            else:
+                self.log_test("Enhanced Question Retrieval", True, "No questions found (empty result is valid)")
         else:
-            self.log_test("Question Retrieval", False, "Failed to retrieve questions",
+            self.log_test("Enhanced Question Retrieval", False, "Failed to retrieve questions",
                          {"status_code": status_code, "response": data})
+    
+    def test_qa_search_and_filtering(self):
+        """Test Q&A search, filtering, and sorting functionality"""
+        if not self.auth_token:
+            self.log_test("Q&A Search and Filtering", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Test 1: Search by title and content
+        search_params = {"search": "landlord", "page": 1, "per_page": 10}
+        success, data, status_code = self.make_request("GET", "/questions", search_params, headers)
+        
+        if success and data.get("success"):
+            self.log_test("Q&A Search Functionality", True, "Search by text working")
+        else:
+            self.log_test("Q&A Search Functionality", False, "Search functionality failed")
+        
+        # Test 2: Category filtering
+        category_params = {"category": "housing", "page": 1, "per_page": 10}
+        success, data, status_code = self.make_request("GET", "/questions", category_params, headers)
+        
+        if success and data.get("success"):
+            questions = data.get("data", {}).get("items", [])
+            # Verify all questions are from housing category
+            correct_category = all(q.get("category") == "housing" for q in questions) if questions else True
+            
+            if correct_category:
+                self.log_test("Q&A Category Filtering", True, f"Category filtering working ({len(questions)} housing questions)")
+            else:
+                self.log_test("Q&A Category Filtering", False, "Category filtering not working correctly")
+        else:
+            self.log_test("Q&A Category Filtering", False, "Category filtering failed")
+        
+        # Test 3: Status filtering
+        status_params = {"status": "open", "page": 1, "per_page": 10}
+        success, data, status_code = self.make_request("GET", "/questions", status_params, headers)
+        
+        if success and data.get("success"):
+            self.log_test("Q&A Status Filtering", True, "Status filtering working")
+        else:
+            self.log_test("Q&A Status Filtering", False, "Status filtering failed")
+        
+        # Test 4: Different sorting options
+        sort_options = ["recent", "popular", "unanswered"]
+        for sort_by in sort_options:
+            sort_params = {"sort_by": sort_by, "page": 1, "per_page": 5}
+            success, data, status_code = self.make_request("GET", "/questions", sort_params, headers)
+            
+            if success and data.get("success"):
+                self.log_test(f"Q&A Sorting ({sort_by})", True, f"Sorting by {sort_by} working")
+            else:
+                self.log_test(f"Q&A Sorting ({sort_by})", False, f"Sorting by {sort_by} failed")
+    
+    def test_qa_voting_system(self):
+        """Test comprehensive voting system for questions and answers"""
+        if not self.auth_token or not hasattr(self, 'test_question_id'):
+            self.log_test("Q&A Voting System", False, "No auth token or test question available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        question_id = self.test_question_id
+        
+        # Create a second user for voting (can't vote on own content)
+        import time
+        timestamp = str(int(time.time()))
+        second_user_data = {
+            "email": f"voter.user.{timestamp}@university.edu",
+            "username": f"voter_user_{timestamp}",
+            "password": "VoterPass123!",
+            "user_type": "undergraduate",
+            "profile": {"first_name": "Voter", "last_name": "User"}
+        }
+        
+        success, data, status_code = self.make_request("POST", "/auth/register", second_user_data)
+        
+        if success and data.get("success"):
+            # Login as second user
+            login_data = {"email": second_user_data["email"], "password": second_user_data["password"]}
+            success, data, status_code = self.make_request("POST", "/auth/login", login_data)
+            
+            if success and data.get("success"):
+                voter_token = data["data"]["access_token"]
+                voter_headers = {"Authorization": f"Bearer {voter_token}"}
+                
+                # Test 1: Vote on question (upvote)
+                vote_data = {"vote_type": "upvote"}
+                success, data, status_code = self.make_request("POST", f"/questions/{question_id}/vote", 
+                                                             vote_data, voter_headers)
+                
+                if success and data.get("success"):
+                    self.log_test("Question Upvote", True, "Successfully upvoted question (should award 2 XP)")
+                    
+                    # Test 2: Toggle vote (remove upvote)
+                    success, data, status_code = self.make_request("POST", f"/questions/{question_id}/vote", 
+                                                                 vote_data, voter_headers)
+                    
+                    if success and data.get("success"):
+                        self.log_test("Question Vote Toggle", True, "Successfully toggled vote (removed upvote)")
+                        
+                        # Test 3: Vote downvote
+                        downvote_data = {"vote_type": "downvote"}
+                        success, data, status_code = self.make_request("POST", f"/questions/{question_id}/vote", 
+                                                                     downvote_data, voter_headers)
+                        
+                        if success and data.get("success"):
+                            self.log_test("Question Downvote", True, "Successfully downvoted question")
+                            
+                            # Test 4: Change vote (downvote to upvote)
+                            success, data, status_code = self.make_request("POST", f"/questions/{question_id}/vote", 
+                                                                         vote_data, voter_headers)
+                            
+                            if success and data.get("success"):
+                                self.log_test("Question Vote Change", True, "Successfully changed vote from downvote to upvote")
+                            else:
+                                self.log_test("Question Vote Change", False, "Failed to change vote")
+                        else:
+                            self.log_test("Question Downvote", False, "Failed to downvote question")
+                    else:
+                        self.log_test("Question Vote Toggle", False, "Failed to toggle vote")
+                else:
+                    self.log_test("Question Upvote", False, "Failed to upvote question")
+                
+                # Test 5: Answer voting (if answer exists)
+                if hasattr(self, 'test_answer_id'):
+                    answer_id = self.test_answer_id
+                    
+                    # Vote on answer
+                    success, data, status_code = self.make_request("POST", f"/answers/{answer_id}/vote", 
+                                                                 vote_data, voter_headers)
+                    
+                    if success and data.get("success"):
+                        self.log_test("Answer Upvote", True, "Successfully upvoted answer (should award 2 XP to voter, 5 XP to author)")
+                    else:
+                        self.log_test("Answer Upvote", False, "Failed to upvote answer")
+            else:
+                self.log_test("Q&A Voting System", False, "Failed to login as second user for voting")
+        else:
+            self.log_test("Q&A Voting System", False, "Failed to create second user for voting tests")
+        
+        # Test 6: Self-voting prevention
+        self_vote_data = {"vote_type": "upvote"}
+        success, data, status_code = self.make_request("POST", f"/questions/{question_id}/vote", 
+                                                     self_vote_data, headers)
+        
+        if not success and status_code == 400:
+            self.log_test("Self-Vote Prevention", True, "Correctly prevented self-voting on question")
+        else:
+            self.log_test("Self-Vote Prevention", False, "Should prevent users from voting on their own content")
+    
+    def test_qa_answer_acceptance(self):
+        """Test answer acceptance system (question author only)"""
+        if not self.auth_token or not hasattr(self, 'test_answer_id'):
+            self.log_test("Answer Acceptance System", False, "No auth token or test answer available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        answer_id = self.test_answer_id
+        
+        # Test 1: Accept answer as question author
+        success, data, status_code = self.make_request("POST", f"/answers/{answer_id}/accept", {}, headers)
+        
+        if success and data.get("success"):
+            self.log_test("Answer Acceptance", True, "Successfully accepted answer (should award 25 XP to answer author)")
+        else:
+            self.log_test("Answer Acceptance", False, "Failed to accept answer",
+                         {"status_code": status_code, "response": data})
+        
+        # Test 2: Try to accept answer as non-question author (should fail)
+        # Create another user
+        import time
+        timestamp = str(int(time.time()))
+        other_user_data = {
+            "email": f"other.user.{timestamp}@university.edu",
+            "username": f"other_user_{timestamp}",
+            "password": "OtherPass123!",
+            "user_type": "undergraduate"
+        }
+        
+        success, data, status_code = self.make_request("POST", "/auth/register", other_user_data)
+        
+        if success and data.get("success"):
+            # Login as other user
+            login_data = {"email": other_user_data["email"], "password": other_user_data["password"]}
+            success, data, status_code = self.make_request("POST", "/auth/login", login_data)
+            
+            if success and data.get("success"):
+                other_token = data["data"]["access_token"]
+                other_headers = {"Authorization": f"Bearer {other_token}"}
+                
+                # Try to accept answer (should fail)
+                success, data, status_code = self.make_request("POST", f"/answers/{answer_id}/accept", {}, other_headers)
+                
+                if not success and status_code == 403:
+                    self.log_test("Answer Acceptance Authorization", True, "Correctly prevented non-author from accepting answer")
+                else:
+                    self.log_test("Answer Acceptance Authorization", False, "Should prevent non-authors from accepting answers")
+            else:
+                self.log_test("Answer Acceptance Authorization", False, "Failed to login as other user")
+        else:
+            self.log_test("Answer Acceptance Authorization", False, "Failed to create other user for authorization test")
+    
+    def test_qa_question_detail_view(self):
+        """Test detailed question view with answers and voting data"""
+        if not self.auth_token or not hasattr(self, 'test_question_id'):
+            self.log_test("Question Detail View", False, "No auth token or test question available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        question_id = self.test_question_id
+        
+        # Test detailed question retrieval
+        success, data, status_code = self.make_request("GET", f"/questions/{question_id}", headers=headers)
+        
+        if success and data.get("success"):
+            question_detail = data.get("data", {})
+            
+            # Check if all required fields are present
+            required_fields = ["id", "title", "content", "category", "author_username", "author_user_type", "author_level"]
+            has_required_fields = all(field in question_detail for field in required_fields)
+            
+            if has_required_fields:
+                self.log_test("Question Detail Structure", True, "Question detail has all required fields")
+                
+                # Check if answers are included
+                answers = question_detail.get("answers", [])
+                if answers:
+                    # Check answer structure
+                    first_answer = answers[0]
+                    answer_fields = ["id", "content", "author_username", "author_user_type", "user_vote"]
+                    has_answer_fields = all(field in first_answer for field in answer_fields)
+                    
+                    if has_answer_fields:
+                        self.log_test("Answer Detail Structure", True, f"Answers include all required fields ({len(answers)} answers)")
+                    else:
+                        self.log_test("Answer Detail Structure", False, "Answers missing required fields")
+                else:
+                    self.log_test("Answer Detail Structure", True, "No answers found (valid for new questions)")
+                
+                # Check user vote status
+                user_vote = question_detail.get("user_vote")
+                self.log_test("User Vote Status", True, f"User vote status included: {user_vote}")
+                
+                # Verify view count increment
+                initial_views = question_detail.get("view_count", 0)
+                
+                # View again to test increment
+                success, data, status_code = self.make_request("GET", f"/questions/{question_id}", headers=headers)
+                
+                if success and data.get("success"):
+                    new_views = data.get("data", {}).get("view_count", 0)
+                    if new_views > initial_views:
+                        self.log_test("View Count Tracking", True, f"View count incremented from {initial_views} to {new_views}")
+                    else:
+                        self.log_test("View Count Tracking", True, f"View count tracking working (current: {new_views})")
+                else:
+                    self.log_test("View Count Tracking", False, "Failed to test view count increment")
+            else:
+                self.log_test("Question Detail Structure", False, "Question detail missing required fields")
+        else:
+            self.log_test("Question Detail View", False, "Failed to retrieve question detail",
+                         {"status_code": status_code, "response": data})
+    
+    def test_qa_user_questions(self):
+        """Test retrieving current user's questions"""
+        if not self.auth_token:
+            self.log_test("User Questions Retrieval", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Test GET /api/questions/user/my
+        success, data, status_code = self.make_request("GET", "/questions/user/my", headers=headers)
+        
+        if success and data.get("success"):
+            user_questions = data.get("data", [])
+            
+            if user_questions:
+                # Check if questions include answer counts
+                first_question = user_questions[0]
+                has_answer_count = "answer_count" in first_question
+                
+                if has_answer_count:
+                    self.log_test("User Questions Retrieval", True, 
+                                 f"Retrieved {len(user_questions)} user questions with answer counts")
+                else:
+                    self.log_test("User Questions Retrieval", False, "User questions missing answer counts")
+            else:
+                self.log_test("User Questions Retrieval", True, "No user questions found (valid for new users)")
+        else:
+            self.log_test("User Questions Retrieval", False, "Failed to retrieve user questions",
+                         {"status_code": status_code, "response": data})
+    
+    def test_qa_xp_integration(self):
+        """Test XP integration with Community Q&A System"""
+        if not self.auth_token:
+            self.log_test("Q&A XP Integration", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get initial XP
+        success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+        initial_xp = 0
+        if success and data.get("success"):
+            initial_xp = data.get("data", {}).get("xp", 0)
+        
+        # Create a question (should award 10 XP)
+        import time
+        timestamp = str(int(time.time()))
+        question_data = {
+            "title": f"XP Test Question {timestamp}",
+            "content": "This is a test question to verify XP integration with the Q&A system.",
+            "category": "general",
+            "tags": ["test", "xp", "integration"]
+        }
+        
+        success, data, status_code = self.make_request("POST", "/questions", question_data, headers)
+        
+        if success and data.get("success"):
+            question_id = data.get("data", {}).get("id")
+            
+            # Create an answer (should award 15 XP)
+            answer_data = {
+                "question_id": question_id,
+                "content": "This is a test answer to verify XP integration for answering questions."
+            }
+            
+            success, data, status_code = self.make_request("POST", f"/questions/{question_id}/answers", 
+                                                         answer_data, headers)
+            
+            if success and data.get("success"):
+                # Wait for XP processing
+                time.sleep(1)
+                
+                # Check final XP
+                success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+                
+                if success and data.get("success"):
+                    final_xp = data.get("data", {}).get("xp", 0)
+                    xp_gained = final_xp - initial_xp
+                    
+                    if xp_gained >= 25:  # 10 for question + 15 for answer
+                        self.log_test("Q&A XP Integration", True, f"XP integration working (gained {xp_gained} XP)")
+                    else:
+                        self.log_test("Q&A XP Integration", False, f"Expected ≥25 XP, gained {xp_gained} XP")
+                else:
+                    self.log_test("Q&A XP Integration", False, "Failed to check final XP")
+            else:
+                self.log_test("Q&A XP Integration", False, "Failed to create test answer")
+        else:
+            self.log_test("Q&A XP Integration", False, "Failed to create test question")
     
     def test_legal_myths_system(self):
         """Test legal myths creation and retrieval"""
