@@ -197,7 +197,7 @@ function App() {
             } />
             <Route path="/myths" element={
               <ProtectedRoute>
-                <MythsPage />
+                <MythFeed />
               </ProtectedRoute>
             } />
             <Route path="/simulations" element={
