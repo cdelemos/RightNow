@@ -58,7 +58,7 @@ const Dashboard = () => {
       gradient: 'from-blue-400 to-blue-600',
       bgGradient: 'from-blue-50 to-blue-100',
       textColor: 'text-blue-700',
-      available: false
+      available: true
     },
     {
       title: 'AI Legal Assistant',
@@ -68,7 +68,7 @@ const Dashboard = () => {
       gradient: 'from-purple-400 to-purple-600',
       bgGradient: 'from-purple-50 to-purple-100',
       textColor: 'text-purple-700',
-      available: false
+      available: true
     },
     {
       title: 'Q&A Community',
