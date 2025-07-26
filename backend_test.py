@@ -2250,12 +2250,22 @@ class BackendTester:
         self.test_simulation_scenario_content_quality()
         self.test_simulation_node_structure_and_choices()
         
+        # Community Q&A System tests (COMPREHENSIVE TESTING)
+        print("\n💬 COMMUNITY Q&A SYSTEM TESTS")
+        print("-" * 50)
+        self.test_community_qa_system()
+        self.test_qa_search_and_filtering()
+        self.test_qa_voting_system()
+        self.test_qa_answer_acceptance()
+        self.test_qa_question_detail_view()
+        self.test_qa_user_questions()
+        self.test_qa_xp_integration()
+        
         # Original feature tests
         print("\n🔧 CORE FEATURE TESTS")
         print("-" * 30)
         self.test_legal_statutes_creation()
         self.test_legal_statutes_retrieval()
-        self.test_community_qa_system()
         self.test_legal_myths_system()
         self.test_simulations_system()
         self.test_learning_paths_system()
