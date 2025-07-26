@@ -179,6 +179,17 @@ class SimulationCategory(str, Enum):
     TRAFFIC_STOP = "traffic_stop"
     COURT_APPEARANCE = "court_appearance"
 
+# Enhanced Simulation Models
+class SimulationNode(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: str
+    choices: List[Dict[str, Any]] = []  # Choice text, next_node_id, is_correct, feedback
+    is_end_node: bool = False
+    legal_explanation: Optional[str] = None
+    outcome_type: str = "neutral"  # positive, negative, neutral
+    xp_reward: int = 0
+
 class SimulationScenario(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
@@ -187,31 +198,39 @@ class SimulationScenario(BaseModel):
     difficulty_level: int = 1  # 1-5 scale
     estimated_duration: int  # in minutes
     learning_objectives: List[str] = []
-    scenario_data: Dict[str, Any] = {}  # Contains the branching scenario logic
+    scenario_nodes: List[SimulationNode] = []  # Complete scenario tree
+    start_node_id: str
     created_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = True
-
-class SimulationCreate(BaseModel):
-    title: str
-    description: str
-    category: SimulationCategory
-    difficulty_level: int = 1
-    estimated_duration: int
-    learning_objectives: List[str] = []
-    scenario_data: Dict[str, Any] = {}
+    # New fields for enhanced scenarios
+    legal_context: str = ""
+    applicable_laws: List[str] = []
+    state_specific: bool = False
+    applicable_states: List[str] = []
 
 class SimulationProgress(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     scenario_id: str
-    current_step: int = 0
-    choices_made: List[Dict[str, Any]] = []
-    score: Optional[int] = None
+    current_node_id: str
+    path_taken: List[Dict[str, Any]] = []  # Track choices made
+    score: int = 0
+    max_possible_score: int = 100
     completed: bool = False
     completion_time: Optional[int] = None  # in seconds
     started_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
+    total_xp_earned: int = 0
+
+class SimulationChoice(BaseModel):
+    choice_text: str
+    next_node_id: Optional[str] = None
+    is_optimal: bool = False
+    is_legal: bool = True
+    feedback: str = ""
+    immediate_consequence: str = ""
+    xp_value: int = 0
 
 # Learning Path Models
 class LearningPath(BaseModel):
