@@ -249,8 +249,9 @@ async def get_search_suggestions(q: str):
         "title": {"$regex": f".*{q}.*", "$options": "i"}
     }).limit(5).to_list(5)
     
+    # Fix the keyword query - use $elemMatch for array elements with regex
     keyword_matches = await db.legal_statutes.find({
-        "keywords": {"$in": [{"$regex": f".*{q}.*", "$options": "i"}]}
+        "keywords": {"$elemMatch": {"$regex": f".*{q}.*", "$options": "i"}}
     }).limit(5).to_list(5)
     
     suggestions = []
