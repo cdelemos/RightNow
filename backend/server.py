@@ -320,7 +320,7 @@ async def get_user_bookmarks(current_user: User = Depends(get_current_user)):
 @api_router.get("/statutes/search/suggestions", response_model=APIResponse)
 async def get_search_suggestions(q: str):
     if len(q) < 2:
-        return APIResponse(success=True, data=[])
+        return APIResponse(success=True, message="Query too short", data=[])
     
     # Get suggestions from titles and keywords
     title_matches = await db.legal_statutes.find({
@@ -356,7 +356,7 @@ async def get_search_suggestions(q: str):
                 })
                 seen_titles.add(keyword)
     
-    return APIResponse(success=True, data=suggestions[:8])
+    return APIResponse(success=True, message="Suggestions retrieved successfully", data=suggestions[:8])
 
 # Statistics endpoint
 @api_router.get("/statutes/stats", response_model=APIResponse)
