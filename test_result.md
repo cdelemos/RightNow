@@ -381,7 +381,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Myth-Busting Legal Feed"
+    - "Scenario-Based Legal Simulations"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
