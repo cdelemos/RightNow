@@ -114,7 +114,7 @@ async def login(login_data: UserLogin):
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return APIResponse(success=True, message="User information retrieved", data=current_user.dict())
 
-# Legal Statutes endpoints
+# Enhanced Legal Statutes endpoints with advanced search
 @api_router.post("/statutes", response_model=APIResponse)
 async def create_statute(statute_data: StatuteCreate, current_user: User = Depends(get_current_user)):
     statute = LegalStatute(**statute_data.dict())
@@ -127,30 +127,78 @@ async def get_statutes(
     category: Optional[StatuteCategory] = None,
     search: Optional[str] = None,
     page: int = 1,
-    per_page: int = 20
+    per_page: int = 10,
+    sort_by: str = "relevance"  # relevance, date, title, category
 ):
     query = {}
-    if state:
-        query["state"] = state
+    
+    # State filter
+    if state and state.lower() != "all":
+        query["state"] = {"$regex": f"^{state}$", "$options": "i"}
+    
+    # Category filter
     if category:
         query["category"] = category.value
-    if search:
-        # Simple text search in title, summary, and keywords
-        query["$or"] = [
-            {"title": {"$regex": search, "$options": "i"}},
-            {"summary": {"$regex": search, "$options": "i"}},
-            {"keywords": {"$in": [search.lower()]}}
-        ]
     
+    # Advanced text search
+    if search:
+        search_terms = search.lower().split()
+        search_conditions = []
+        
+        for term in search_terms:
+            search_conditions.append({
+                "$or": [
+                    {"title": {"$regex": term, "$options": "i"}},
+                    {"summary": {"$regex": term, "$options": "i"}},
+                    {"full_text": {"$regex": term, "$options": "i"}},
+                    {"practical_impact": {"$regex": term, "$options": "i"}},
+                    {"student_relevance": {"$regex": term, "$options": "i"}},
+                    {"keywords": {"$in": [term]}}
+                ]
+            })
+        
+        if search_conditions:
+            query["$and"] = search_conditions
+    
+    # Get total count
     total = await db.legal_statutes.count_documents(query)
+    
+    # Apply sorting
+    sort_options = {
+        "relevance": [("title", 1)],  # Default alphabetical when no search
+        "date": [("created_at", -1)],
+        "title": [("title", 1)],
+        "category": [("category", 1), ("title", 1)]
+    }
+    sort_criteria = sort_options.get(sort_by, [("title", 1)])
+    
+    # Execute query with pagination
     skip = (page - 1) * per_page
-    statutes = await db.legal_statutes.find(query).skip(skip).limit(per_page).to_list(per_page)
+    cursor = db.legal_statutes.find(query).sort(sort_criteria).skip(skip).limit(per_page)
+    statutes = await cursor.to_list(per_page)
+    
+    # Add search highlighting and relevance scoring
+    processed_statutes = []
+    for statute in statutes:
+        statute_obj = LegalStatute(**statute)
+        statute_dict = statute_obj.dict()
+        
+        # Add relevance score for search results
+        if search:
+            relevance_score = calculate_relevance_score(statute_dict, search)
+            statute_dict["relevance_score"] = relevance_score
+        
+        processed_statutes.append(statute_dict)
+    
+    # Sort by relevance if searching
+    if search and sort_by == "relevance":
+        processed_statutes.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
     
     return APIResponse(
         success=True,
         message="Statutes retrieved successfully",
         data=PaginatedResponse(
-            items=[LegalStatute(**statute) for statute in statutes],
+            items=processed_statutes,
             total=total,
             page=page,
             per_page=per_page,
@@ -158,13 +206,272 @@ async def get_statutes(
         ).dict()
     )
 
+def calculate_relevance_score(statute: dict, search_query: str) -> float:
+    """Calculate relevance score for search results"""
+    score = 0.0
+    search_lower = search_query.lower()
+    
+    # Title matches (highest weight)
+    if search_lower in statute.get("title", "").lower():
+        score += 10.0
+    
+    # Summary matches (high weight)
+    if search_lower in statute.get("summary", "").lower():
+        score += 5.0
+    
+    # Practical impact matches (medium weight)
+    if search_lower in statute.get("practical_impact", "").lower():
+        score += 3.0
+    
+    # Student relevance matches (medium weight)
+    if search_lower in statute.get("student_relevance", "").lower():
+        score += 3.0
+    
+    # Keyword matches (medium weight)
+    for keyword in statute.get("keywords", []):
+        if search_lower in keyword.lower():
+            score += 2.0
+    
+    # Full text matches (lower weight)
+    if search_lower in statute.get("full_text", "").lower():
+        score += 1.0
+    
+    return score
+
 @api_router.get("/statutes/{statute_id}", response_model=APIResponse)
-async def get_statute(statute_id: str):
+async def get_statute(statute_id: str, current_user: User = Depends(get_current_user)):
     statute = await db.legal_statutes.find_one({"id": statute_id})
     if not statute:
         raise HTTPException(status_code=404, detail="Statute not found")
     
-    return APIResponse(success=True, message="Statute retrieved successfully", data=LegalStatute(**statute).dict())
+    # Track user interaction for gamification
+    await track_statute_view(current_user.id, statute_id)
+    
+    # Get related statutes (same category)
+    related_statutes = await db.legal_statutes.find({
+        "category": statute["category"],
+        "id": {"$ne": statute_id}
+    }).limit(3).to_list(3)
+    
+    statute_obj = LegalStatute(**statute)
+    response_data = statute_obj.dict()
+    response_data["related_statutes"] = [LegalStatute(**s).dict() for s in related_statutes]
+    
+    return APIResponse(success=True, message="Statute retrieved successfully", data=response_data)
+
+# User interaction endpoints
+@api_router.post("/statutes/{statute_id}/bookmark", response_model=APIResponse)
+async def bookmark_statute(statute_id: str, current_user: User = Depends(get_current_user)):
+    # Check if statute exists
+    statute = await db.legal_statutes.find_one({"id": statute_id})
+    if not statute:
+        raise HTTPException(status_code=404, detail="Statute not found")
+    
+    # Check if already bookmarked
+    existing_bookmark = await db.user_statute_bookmarks.find_one({
+        "user_id": current_user.id,
+        "statute_id": statute_id
+    })
+    
+    if existing_bookmark:
+        return APIResponse(success=False, message="Statute already bookmarked")
+    
+    # Create bookmark
+    from models import UserStatuteBookmark
+    bookmark = UserStatuteBookmark(user_id=current_user.id, statute_id=statute_id)
+    await db.user_statute_bookmarks.insert_one(bookmark.dict())
+    
+    # Award XP for bookmarking
+    await award_xp(current_user.id, 5, "bookmark_statute")
+    
+    return APIResponse(success=True, message="Statute bookmarked successfully")
+
+@api_router.delete("/statutes/{statute_id}/bookmark", response_model=APIResponse)
+async def remove_bookmark(statute_id: str, current_user: User = Depends(get_current_user)):
+    result = await db.user_statute_bookmarks.delete_one({
+        "user_id": current_user.id,
+        "statute_id": statute_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Bookmark not found")
+    
+    return APIResponse(success=True, message="Bookmark removed successfully")
+
+@api_router.get("/statutes/bookmarks", response_model=APIResponse)
+async def get_user_bookmarks(current_user: User = Depends(get_current_user)):
+    # Get user's bookmarked statute IDs
+    bookmarks = await db.user_statute_bookmarks.find({"user_id": current_user.id}).to_list(100)
+    statute_ids = [bookmark["statute_id"] for bookmark in bookmarks]
+    
+    if not statute_ids:
+        return APIResponse(success=True, message="No bookmarks found", data=[])
+    
+    # Get the actual statutes
+    statutes = await db.legal_statutes.find({"id": {"$in": statute_ids}}).to_list(100)
+    
+    return APIResponse(
+        success=True,
+        message="Bookmarks retrieved successfully",
+        data=[LegalStatute(**statute).dict() for statute in statutes]
+    )
+
+# Search suggestions endpoint
+@api_router.get("/statutes/search/suggestions", response_model=APIResponse)
+async def get_search_suggestions(q: str):
+    if len(q) < 2:
+        return APIResponse(success=True, data=[])
+    
+    # Get suggestions from titles and keywords
+    title_matches = await db.legal_statutes.find({
+        "title": {"$regex": f".*{q}.*", "$options": "i"}
+    }).limit(5).to_list(5)
+    
+    keyword_matches = await db.legal_statutes.find({
+        "keywords": {"$in": [{"$regex": f".*{q}.*", "$options": "i"}]}
+    }).limit(5).to_list(5)
+    
+    suggestions = []
+    seen_titles = set()
+    
+    # Add title suggestions
+    for statute in title_matches:
+        if statute["title"] not in seen_titles:
+            suggestions.append({
+                "type": "statute",
+                "text": statute["title"],
+                "category": statute["category"],
+                "state": statute["state"]
+            })
+            seen_titles.add(statute["title"])
+    
+    # Add keyword suggestions
+    for statute in keyword_matches:
+        for keyword in statute["keywords"]:
+            if q.lower() in keyword.lower() and keyword not in seen_titles:
+                suggestions.append({
+                    "type": "keyword",
+                    "text": keyword,
+                    "category": statute["category"]
+                })
+                seen_titles.add(keyword)
+    
+    return APIResponse(success=True, data=suggestions[:8])
+
+# Statistics endpoint
+@api_router.get("/statutes/stats", response_model=APIResponse)
+async def get_statute_stats():
+    # Get statistics about the statute database
+    total_statutes = await db.legal_statutes.count_documents({})
+    
+    # Count by category
+    category_pipeline = [
+        {"$group": {"_id": "$category", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    category_stats = await db.legal_statutes.aggregate(category_pipeline).to_list(20)
+    
+    # Count by state
+    state_pipeline = [
+        {"$group": {"_id": "$state", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    state_stats = await db.legal_statutes.aggregate(state_pipeline).to_list(20)
+    
+    return APIResponse(
+        success=True, 
+        message="Statistics retrieved successfully",
+        data={
+            "total_statutes": total_statutes,
+            "by_category": category_stats,
+            "by_state": state_stats
+        }
+    )
+
+# Helper functions
+async def track_statute_view(user_id: str, statute_id: str):
+    """Track when a user views a statute for analytics and gamification"""
+    from models import UserStatuteProgress
+    
+    # Check if user has viewed this statute before
+    existing_progress = await db.user_statute_progress.find_one({
+        "user_id": user_id,
+        "statute_id": statute_id
+    })
+    
+    if not existing_progress:
+        # First time viewing - create progress record and award XP
+        progress = UserStatuteProgress(user_id=user_id, statute_id=statute_id)
+        await db.user_statute_progress.insert_one(progress.dict())
+        await award_xp(user_id, 10, "read_statute")
+    else:
+        # Update last read time
+        await db.user_statute_progress.update_one(
+            {"user_id": user_id, "statute_id": statute_id},
+            {"$set": {"read_at": datetime.utcnow()}}
+        )
+
+async def award_xp(user_id: str, xp_amount: int, action: str):
+    """Award XP to user and update level if necessary"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        return
+    
+    new_xp = user.get("xp", 0) + xp_amount
+    new_level = calculate_level_from_xp(new_xp)
+    
+    # Update user XP and level
+    await db.users.update_one(
+        {"id": user_id},
+        {
+            "$set": {
+                "xp": new_xp,
+                "level": new_level,
+                "last_activity": datetime.utcnow()
+            }
+        }
+    )
+    
+    # Check for level up and award badges if necessary
+    if new_level > user.get("level", 1):
+        await check_and_award_badges(user_id, new_level, action)
+
+def calculate_level_from_xp(xp: int) -> int:
+    """Calculate user level based on XP (simple formula: level = XP / 100 + 1)"""
+    return min(max(xp // 100 + 1, 1), 50)  # Cap at level 50
+
+async def check_and_award_badges(user_id: str, level: int, action: str):
+    """Check if user should receive any badges"""
+    badges_to_award = []
+    
+    # Level-based badges
+    if level >= 5:
+        badges_to_award.append("legal_scholar")
+    if level >= 10:
+        badges_to_award.append("statute_master")
+    if level >= 20:
+        badges_to_award.append("legal_expert")
+    
+    # Action-based badges
+    if action == "read_statute":
+        statute_count = await db.user_statute_progress.count_documents({"user_id": user_id})
+        if statute_count >= 10:
+            badges_to_award.append("knowledge_seeker")
+        if statute_count >= 50:
+            badges_to_award.append("legal_encyclopedia")
+    
+    # Award new badges
+    user = await db.users.find_one({"id": user_id})
+    current_badges = user.get("badges", [])
+    
+    for badge in badges_to_award:
+        if badge not in current_badges:
+            current_badges.append(badge)
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"badges": current_badges}}
+    )
 
 # Community Q&A endpoints
 @api_router.post("/questions", response_model=APIResponse)
