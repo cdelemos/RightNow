@@ -238,6 +238,97 @@ def calculate_relevance_score(statute: dict, search_query: str) -> float:
     
     return score
 
+# Search suggestions endpoint
+@api_router.get("/statutes/search/suggestions", response_model=APIResponse)
+async def get_search_suggestions(q: str):
+    if len(q) < 2:
+        return APIResponse(success=True, message="Query too short", data=[])
+    
+    # Get suggestions from titles and keywords
+    title_matches = await db.legal_statutes.find({
+        "title": {"$regex": f".*{q}.*", "$options": "i"}
+    }).limit(5).to_list(5)
+    
+    keyword_matches = await db.legal_statutes.find({
+        "keywords": {"$in": [{"$regex": f".*{q}.*", "$options": "i"}]}
+    }).limit(5).to_list(5)
+    
+    suggestions = []
+    seen_titles = set()
+    
+    # Add title suggestions
+    for statute in title_matches:
+        if statute["title"] not in seen_titles:
+            suggestions.append({
+                "type": "statute",
+                "text": statute["title"],
+                "category": statute["category"],
+                "state": statute["state"]
+            })
+            seen_titles.add(statute["title"])
+    
+    # Add keyword suggestions
+    for statute in keyword_matches:
+        for keyword in statute["keywords"]:
+            if q.lower() in keyword.lower() and keyword not in seen_titles:
+                suggestions.append({
+                    "type": "keyword",
+                    "text": keyword,
+                    "category": statute["category"]
+                })
+                seen_titles.add(keyword)
+    
+    return APIResponse(success=True, message="Suggestions retrieved successfully", data=suggestions[:8])
+
+# Statistics endpoint
+@api_router.get("/statutes/stats", response_model=APIResponse)
+async def get_statute_stats():
+    # Get statistics about the statute database
+    total_statutes = await db.legal_statutes.count_documents({})
+    
+    # Count by category
+    category_pipeline = [
+        {"$group": {"_id": "$category", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    category_stats = await db.legal_statutes.aggregate(category_pipeline).to_list(20)
+    
+    # Count by state
+    state_pipeline = [
+        {"$group": {"_id": "$state", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    state_stats = await db.legal_statutes.aggregate(state_pipeline).to_list(20)
+    
+    return APIResponse(
+        success=True, 
+        message="Statistics retrieved successfully",
+        data={
+            "total_statutes": total_statutes,
+            "by_category": category_stats,
+            "by_state": state_stats
+        }
+    )
+
+# User bookmarks endpoint
+@api_router.get("/statutes/bookmarks", response_model=APIResponse)
+async def get_user_bookmarks(current_user: User = Depends(get_current_user)):
+    # Get user's bookmarked statute IDs
+    bookmarks = await db.user_statute_bookmarks.find({"user_id": current_user.id}).to_list(100)
+    statute_ids = [bookmark["statute_id"] for bookmark in bookmarks]
+    
+    if not statute_ids:
+        return APIResponse(success=True, message="No bookmarks found", data=[])
+    
+    # Get the actual statutes
+    statutes = await db.legal_statutes.find({"id": {"$in": statute_ids}}).to_list(100)
+    
+    return APIResponse(
+        success=True,
+        message="Bookmarks retrieved successfully",
+        data=[LegalStatute(**statute).dict() for statute in statutes]
+    )
+
 @api_router.get("/statutes/{statute_id}", response_model=APIResponse)
 async def get_statute(statute_id: str, current_user: User = Depends(get_current_user)):
     statute = await db.legal_statutes.find_one({"id": statute_id})
