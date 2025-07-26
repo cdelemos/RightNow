@@ -1425,9 +1425,10 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_db_client():
-    """Initialize database with common script templates and legal myths"""
+    """Initialize database with common script templates, legal myths, and simulations"""
     await initialize_script_templates()
     await initialize_legal_myths()
+    await initialize_legal_simulations()
 
 async def initialize_script_templates():
     """Initialize the database with common legal script templates"""
