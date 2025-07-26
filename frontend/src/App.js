@@ -75,33 +75,7 @@ const QuestionsPage = () => (
   </div>
 );
 
-const MythsPage = () => (
-  <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50 p-8">
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-4xl font-bold text-sage-800 mb-8 flex items-center">
-        <span className="animate-float inline-block mr-4">🎯</span>
-        Legal Myths
-      </h1>
-      <div className="bg-white rounded-3xl shadow-sage-lg p-12 text-center border border-sage-100">
-        <div className="text-8xl mb-6 animate-bounce-soft">🚧</div>
-        <h2 className="text-3xl font-bold text-sage-800 mb-4">Myth-Busting Magic!</h2>
-        <p className="text-sage-600 text-lg max-w-2xl mx-auto leading-relaxed">
-          The Myth-Busting Legal Feed is being designed to shatter misconceptions 
-          with facts and fun! Swipe through legal truths daily! 📱✨
-        </p>
-        <div className="mt-8 bg-sage-50 rounded-2xl p-6">
-          <div className="text-sage-700 font-medium mb-2">🎯 What's Coming:</div>
-          <div className="grid md:grid-cols-2 gap-4 text-sm text-sage-600">
-            <div>• Daily myth-busting content</div>
-            <div>• Swipeable interface</div>
-            <div>• Expert fact-checking</div>
-            <div>• Social sharing features</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+
 
 const SimulationsPage = () => (
   <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50 p-8">
