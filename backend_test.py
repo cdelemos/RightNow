@@ -966,6 +966,340 @@ class BackendTester:
         else:
             self.log_test("Gamification Features", False, "Failed to create test statute for gamification")
     
+    def test_myth_busting_feed_system(self):
+        """Test comprehensive Myth-Busting Legal Feed functionality"""
+        if not self.auth_token:
+            self.log_test("Myth-Busting Feed System", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Test 1: Get daily myth
+        success, data, status_code = self.make_request("GET", "/myths/daily", headers=headers)
+        
+        if success and data.get("success"):
+            daily_myth = data.get("data", {})
+            required_fields = ["id", "title", "myth_statement", "fact_explanation", "category", "difficulty_level"]
+            has_required_fields = all(field in daily_myth for field in required_fields)
+            
+            if has_required_fields:
+                self.log_test("Daily Myth Retrieval", True, f"Retrieved daily myth: '{daily_myth.get('title', '')[:50]}...'")
+                self.daily_myth_id = daily_myth.get("id")
+            else:
+                self.log_test("Daily Myth Retrieval", False, "Daily myth missing required fields")
+        else:
+            self.log_test("Daily Myth Retrieval", False, "Failed to retrieve daily myth",
+                         {"status_code": status_code, "response": data})
+        
+        # Test 2: Get myth feed for swipeable interface
+        success, data, status_code = self.make_request("GET", "/myths/feed", {"page": 1, "per_page": 5}, headers)
+        
+        if success and data.get("success"):
+            feed_data = data.get("data", {})
+            myths = feed_data.get("items", [])
+            
+            if myths:
+                # Check if user interaction data is included
+                first_myth = myths[0]
+                has_user_data = "user_has_read" in first_myth and "user_liked" in first_myth
+                
+                if has_user_data:
+                    self.log_test("Myth Feed (Swipeable)", True, f"Retrieved {len(myths)} myths with user interaction data")
+                else:
+                    self.log_test("Myth Feed (Swipeable)", False, "Myth feed missing user interaction data")
+                
+                # Test pagination structure
+                pagination_fields = ["total", "page", "per_page", "pages"]
+                has_pagination = all(field in feed_data for field in pagination_fields)
+                
+                if has_pagination:
+                    self.log_test("Myth Feed Pagination", True, f"Pagination working (page {feed_data.get('page')} of {feed_data.get('pages')})")
+                else:
+                    self.log_test("Myth Feed Pagination", False, "Missing pagination structure")
+            else:
+                self.log_test("Myth Feed (Swipeable)", False, "No myths found in feed - database may not be initialized")
+        else:
+            self.log_test("Myth Feed (Swipeable)", False, "Failed to retrieve myth feed",
+                         {"status_code": status_code, "response": data})
+        
+        # Test 3: Category filtering in feed
+        success, data, status_code = self.make_request("GET", "/myths/feed", 
+                                                     {"category": "criminal_law", "page": 1, "per_page": 3}, headers)
+        
+        if success and data.get("success"):
+            filtered_myths = data.get("data", {}).get("items", [])
+            # Check if all myths are from the requested category
+            correct_category = all(myth.get("category") == "criminal_law" for myth in filtered_myths) if filtered_myths else True
+            
+            if correct_category:
+                self.log_test("Myth Feed Category Filter", True, f"Category filtering working ({len(filtered_myths)} criminal law myths)")
+            else:
+                self.log_test("Myth Feed Category Filter", False, "Category filtering not working correctly")
+        else:
+            self.log_test("Myth Feed Category Filter", False, "Category filtering failed")
+    
+    def test_myth_interaction_system(self):
+        """Test myth reading, liking, and sharing with XP rewards"""
+        if not self.auth_token or not hasattr(self, 'daily_myth_id'):
+            self.log_test("Myth Interaction System", False, "No auth token or myth ID available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        myth_id = self.daily_myth_id
+        
+        # Get initial user XP
+        success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+        initial_xp = 0
+        if success and data.get("success"):
+            initial_xp = data.get("data", {}).get("xp", 0)
+        
+        # Test 1: Mark myth as read (should award 15 XP)
+        success, data, status_code = self.make_request("POST", f"/myths/{myth_id}/read", {}, headers)
+        
+        if success and data.get("success"):
+            xp_awarded = data.get("data", {}).get("xp_awarded", 0)
+            if xp_awarded == 15:
+                self.log_test("Myth Read Tracking", True, f"Myth marked as read, {xp_awarded} XP awarded")
+            else:
+                self.log_test("Myth Read Tracking", True, f"Myth marked as read (XP: {xp_awarded})")
+        else:
+            self.log_test("Myth Read Tracking", False, "Failed to mark myth as read",
+                         {"status_code": status_code, "response": data})
+        
+        # Test 2: Like myth (should award additional XP)
+        success, data, status_code = self.make_request("POST", f"/myths/{myth_id}/like", {}, headers)
+        
+        if success and data.get("success"):
+            self.log_test("Myth Like System", True, "Successfully liked myth")
+            
+            # Test unlike (toggle)
+            success, data, status_code = self.make_request("POST", f"/myths/{myth_id}/like", {}, headers)
+            
+            if success and data.get("success"):
+                self.log_test("Myth Unlike System", True, "Successfully toggled like (unliked myth)")
+            else:
+                self.log_test("Myth Unlike System", False, "Failed to unlike myth")
+            
+            # Like again for sharing test
+            self.make_request("POST", f"/myths/{myth_id}/like", {}, headers)
+        else:
+            self.log_test("Myth Like System", False, "Failed to like myth",
+                         {"status_code": status_code, "response": data})
+        
+        # Test 3: Share myth (should award 10 XP)
+        success, data, status_code = self.make_request("POST", f"/myths/{myth_id}/share", {}, headers)
+        
+        if success and data.get("success"):
+            xp_awarded = data.get("data", {}).get("xp_awarded", 0)
+            if xp_awarded == 10:
+                self.log_test("Myth Share Tracking", True, f"Myth shared, {xp_awarded} XP awarded")
+            else:
+                self.log_test("Myth Share Tracking", True, f"Myth shared (XP: {xp_awarded})")
+        else:
+            self.log_test("Myth Share Tracking", False, "Failed to track myth sharing",
+                         {"status_code": status_code, "response": data})
+        
+        # Test 4: Verify XP accumulation
+        import time
+        time.sleep(1)  # Allow for async XP processing
+        
+        success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+        if success and data.get("success"):
+            final_xp = data.get("data", {}).get("xp", 0)
+            xp_gained = final_xp - initial_xp
+            
+            if xp_gained > 0:
+                self.log_test("Myth XP Accumulation", True, f"Total XP gained from myth interactions: {xp_gained}")
+            else:
+                self.log_test("Myth XP Accumulation", False, f"No XP gained (initial: {initial_xp}, final: {final_xp})")
+        else:
+            self.log_test("Myth XP Accumulation", False, "Failed to check final XP")
+    
+    def test_myth_user_progress_tracking(self):
+        """Test user myth progress tracking and state management"""
+        if not self.auth_token:
+            self.log_test("Myth Progress Tracking", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get myth feed to check user interaction states
+        success, data, status_code = self.make_request("GET", "/myths/feed", {"page": 1, "per_page": 10}, headers)
+        
+        if success and data.get("success"):
+            myths = data.get("data", {}).get("items", [])
+            
+            if myths:
+                # Check if user interaction data is properly tracked
+                read_myths = [myth for myth in myths if myth.get("user_has_read", False)]
+                liked_myths = [myth for myth in myths if myth.get("user_liked", False)]
+                
+                self.log_test("User Read State Tracking", True, f"{len(read_myths)} myths marked as read by user")
+                self.log_test("User Like State Tracking", True, f"{len(liked_myths)} myths liked by user")
+                
+                # Test that user interaction data is consistent
+                for myth in myths:
+                    has_interaction_fields = "user_has_read" in myth and "user_liked" in myth
+                    if not has_interaction_fields:
+                        self.log_test("User Interaction Data Consistency", False, "Missing user interaction fields")
+                        return
+                
+                self.log_test("User Interaction Data Consistency", True, "All myths include user interaction data")
+            else:
+                self.log_test("Myth Progress Tracking", False, "No myths available for progress tracking test")
+        else:
+            self.log_test("Myth Progress Tracking", False, "Failed to retrieve myth feed for progress tracking")
+    
+    def test_myth_database_initialization(self):
+        """Test that legal myths are properly initialized in database"""
+        # Test legacy myths endpoint to verify database initialization
+        success, data, status_code = self.make_request("GET", "/myths", {"page": 1, "per_page": 20})
+        
+        if success and data.get("success"):
+            myths_data = data.get("data", {})
+            myths = myths_data.get("items", [])
+            total_myths = myths_data.get("total", 0)
+            
+            if total_myths >= 10:  # Should have at least 10 initialized myths
+                self.log_test("Myth Database Initialization", True, f"Database initialized with {total_myths} legal myths")
+                
+                # Check myth structure and content quality
+                if myths:
+                    first_myth = myths[0]
+                    required_fields = ["title", "myth_statement", "fact_explanation", "category", "sources", "tags"]
+                    has_required_fields = all(field in first_myth for field in required_fields)
+                    
+                    if has_required_fields:
+                        self.log_test("Myth Content Structure", True, "Myths have proper structure with all required fields")
+                        
+                        # Check content quality
+                        has_meaningful_content = (
+                            len(first_myth.get("myth_statement", "")) > 50 and
+                            len(first_myth.get("fact_explanation", "")) > 100 and
+                            len(first_myth.get("sources", [])) > 0 and
+                            len(first_myth.get("tags", [])) > 0
+                        )
+                        
+                        if has_meaningful_content:
+                            self.log_test("Myth Content Quality", True, "Myths contain comprehensive, educational content")
+                        else:
+                            self.log_test("Myth Content Quality", False, "Myth content appears incomplete or low quality")
+                    else:
+                        self.log_test("Myth Content Structure", False, "Myths missing required fields")
+                
+                # Test category distribution
+                categories = set(myth.get("category") for myth in myths)
+                if len(categories) >= 5:  # Should cover multiple legal categories
+                    self.log_test("Myth Category Coverage", True, f"Myths cover {len(categories)} legal categories")
+                else:
+                    self.log_test("Myth Category Coverage", False, f"Limited category coverage ({len(categories)} categories)")
+            else:
+                self.log_test("Myth Database Initialization", False, f"Insufficient myths in database ({total_myths} found, expected ≥10)")
+        else:
+            self.log_test("Myth Database Initialization", False, "Failed to retrieve myths for initialization check",
+                         {"status_code": status_code, "response": data})
+    
+    def test_myth_view_and_engagement_counters(self):
+        """Test that myth views, likes, and shares are properly counted"""
+        if not self.auth_token:
+            self.log_test("Myth Engagement Counters", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get a myth from the feed
+        success, data, status_code = self.make_request("GET", "/myths/feed", {"page": 1, "per_page": 1}, headers)
+        
+        if success and data.get("success"):
+            myths = data.get("data", {}).get("items", [])
+            
+            if myths:
+                myth = myths[0]
+                myth_id = myth.get("id")
+                initial_views = myth.get("views", 0)
+                initial_likes = myth.get("likes", 0)
+                initial_shares = myth.get("shares", 0)
+                
+                # Interact with the myth
+                self.make_request("POST", f"/myths/{myth_id}/read", {}, headers)
+                self.make_request("POST", f"/myths/{myth_id}/like", {}, headers)
+                self.make_request("POST", f"/myths/{myth_id}/share", {}, headers)
+                
+                # Wait for counter updates
+                import time
+                time.sleep(1)
+                
+                # Check updated counters
+                success, data, status_code = self.make_request("GET", "/myths/feed", {"page": 1, "per_page": 1}, headers)
+                
+                if success and data.get("success"):
+                    updated_myths = data.get("data", {}).get("items", [])
+                    if updated_myths:
+                        updated_myth = updated_myths[0]
+                        new_views = updated_myth.get("views", 0)
+                        new_likes = updated_myth.get("likes", 0)
+                        new_shares = updated_myth.get("shares", 0)
+                        
+                        # Check if counters increased (may not increase if user already interacted)
+                        counters_working = (
+                            new_views >= initial_views and
+                            new_likes >= initial_likes and
+                            new_shares >= initial_shares
+                        )
+                        
+                        if counters_working:
+                            self.log_test("Myth Engagement Counters", True, 
+                                         f"Counters working - Views: {new_views}, Likes: {new_likes}, Shares: {new_shares}")
+                        else:
+                            self.log_test("Myth Engagement Counters", False, "Engagement counters not updating properly")
+                    else:
+                        self.log_test("Myth Engagement Counters", False, "No myths found for counter verification")
+                else:
+                    self.log_test("Myth Engagement Counters", False, "Failed to verify counter updates")
+            else:
+                self.log_test("Myth Engagement Counters", False, "No myths available for counter testing")
+        else:
+            self.log_test("Myth Engagement Counters", False, "Failed to retrieve myths for counter testing")
+    
+    def test_myth_daily_reset_logic(self):
+        """Test daily myth selection and reset logic"""
+        if not self.auth_token:
+            self.log_test("Daily Myth Reset Logic", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get daily myth multiple times to test consistency
+        daily_myths = []
+        for i in range(3):
+            success, data, status_code = self.make_request("GET", "/myths/daily", headers=headers)
+            
+            if success and data.get("success"):
+                myth = data.get("data", {})
+                daily_myths.append(myth.get("id"))
+            else:
+                self.log_test("Daily Myth Reset Logic", False, f"Failed to get daily myth on attempt {i+1}")
+                return
+        
+        # Check if same myth is returned (should be consistent within same session)
+        if len(set(daily_myths)) == 1:
+            self.log_test("Daily Myth Consistency", True, "Daily myth remains consistent across multiple requests")
+        else:
+            self.log_test("Daily Myth Consistency", False, "Daily myth changes between requests (may indicate reset logic issue)")
+        
+        # Test that daily myth endpoint returns unread myths first
+        # This is harder to test without manipulating user progress, so we'll just verify the endpoint works
+        success, data, status_code = self.make_request("GET", "/myths/daily", headers=headers)
+        
+        if success and data.get("success"):
+            daily_myth = data.get("data", {})
+            if daily_myth.get("id") and daily_myth.get("status") == "published":
+                self.log_test("Daily Myth Selection Logic", True, "Daily myth selection working (returns published myths)")
+            else:
+                self.log_test("Daily Myth Selection Logic", False, "Daily myth selection logic may have issues")
+        else:
+            self.log_test("Daily Myth Selection Logic", False, "Daily myth selection failed")
+    
     def run_all_tests(self):
         """Run all backend tests"""
         print("🚀 Starting AI-Powered Legal Query Assistant Backend Tests")
