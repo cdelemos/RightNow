@@ -489,11 +489,15 @@ async def check_and_award_badges(user_id: str, level: int, action: str):
         {"$set": {"badges": current_badges}}
     )
 
-# Community Q&A endpoints
+# Enhanced Community Q&A endpoints with voting and moderation
 @api_router.post("/questions", response_model=APIResponse)
 async def create_question(question_data: QuestionCreate, current_user: User = Depends(get_current_user)):
     question = Question(**question_data.dict(), author_id=current_user.id)
     await db.questions.insert_one(question.dict())
+    
+    # Award XP for asking a question
+    await award_xp(current_user.id, 10, "ask_question")
+    
     return APIResponse(success=True, message="Question created successfully", data=question.dict())
 
 @api_router.get("/questions", response_model=APIResponse)
@@ -501,8 +505,10 @@ async def get_questions(
     category: Optional[StatuteCategory] = None,
     status: Optional[QuestionStatus] = None,
     search: Optional[str] = None,
+    sort_by: str = "recent",  # recent, popular, unanswered
     page: int = 1,
-    per_page: int = 20
+    per_page: int = 20,
+    current_user: User = Depends(get_current_user)
 ):
     query = {}
     if category:
@@ -518,19 +524,110 @@ async def get_questions(
     
     total = await db.questions.count_documents(query)
     skip = (page - 1) * per_page
-    questions = await db.questions.find(query).sort("created_at", -1).skip(skip).limit(per_page).to_list(per_page)
+    
+    # Apply sorting
+    sort_options = {
+        "recent": [("created_at", -1)],
+        "popular": [("upvotes", -1), ("view_count", -1)],
+        "unanswered": [("status", 1), ("created_at", -1)]
+    }
+    sort_criteria = sort_options.get(sort_by, [("created_at", -1)])
+    
+    questions = await db.questions.find(query).sort(sort_criteria).skip(skip).limit(per_page).to_list(per_page)
+    
+    # Enrich questions with user interaction data and author info
+    enriched_questions = []
+    for question in questions:
+        question_obj = Question(**question)
+        question_dict = question_obj.dict()
+        
+        # Get author information
+        author = await db.users.find_one({"id": question_obj.author_id})
+        if author:
+            question_dict["author_username"] = author.get("username", "Anonymous")
+            question_dict["author_user_type"] = author.get("user_type", "general")
+        
+        # Get answer count
+        answer_count = await db.answers.count_documents({"question_id": question_obj.id})
+        question_dict["answer_count"] = answer_count
+        
+        # Check if current user has voted
+        user_vote = await db.question_votes.find_one({
+            "user_id": current_user.id,
+            "question_id": question_obj.id
+        })
+        question_dict["user_vote"] = user_vote.get("vote_type") if user_vote else None
+        
+        enriched_questions.append(question_dict)
     
     return APIResponse(
         success=True,
         message="Questions retrieved successfully",  
         data=PaginatedResponse(
-            items=[Question(**question) for question in questions],
+            items=enriched_questions,
             total=total,
             page=page,
             per_page=per_page,
             pages=math.ceil(total / per_page)
         ).dict()
     )
+
+@api_router.get("/questions/{question_id}", response_model=APIResponse)
+async def get_question_detail(question_id: str, current_user: User = Depends(get_current_user)):
+    question = await db.questions.find_one({"id": question_id})
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    # Increment view count
+    await db.questions.update_one(
+        {"id": question_id},
+        {"$inc": {"view_count": 1}}
+    )
+    
+    question_obj = Question(**question)
+    question_dict = question_obj.dict()
+    
+    # Get author information
+    author = await db.users.find_one({"id": question_obj.author_id})
+    if author:
+        question_dict["author_username"] = author.get("username", "Anonymous")
+        question_dict["author_user_type"] = author.get("user_type", "general")
+        question_dict["author_level"] = author.get("level", 1)
+    
+    # Get answers
+    answers = await db.answers.find({"question_id": question_id}).sort("created_at", -1).to_list(100)
+    enriched_answers = []
+    
+    for answer in answers:
+        answer_obj = Answer(**answer)
+        answer_dict = answer_obj.dict()
+        
+        # Get answer author info
+        answer_author = await db.users.find_one({"id": answer_obj.author_id})
+        if answer_author:
+            answer_dict["author_username"] = answer_author.get("username", "Anonymous")
+            answer_dict["author_user_type"] = answer_author.get("user_type", "general")
+            answer_dict["author_level"] = answer_author.get("level", 1)
+        
+        # Check user vote on answer
+        user_answer_vote = await db.answer_votes.find_one({
+            "user_id": current_user.id,
+            "answer_id": answer_obj.id
+        })
+        answer_dict["user_vote"] = user_answer_vote.get("vote_type") if user_answer_vote else None
+        
+        enriched_answers.append(answer_dict)
+    
+    question_dict["answers"] = enriched_answers
+    
+    # Check if current user has voted on question
+    user_vote = await db.question_votes.find_one({
+        "user_id": current_user.id,
+        "question_id": question_id
+    })
+    question_dict["user_vote"] = user_vote.get("vote_type") if user_vote else None
+    
+    return APIResponse(success=True, message="Question details retrieved successfully", data=question_dict)
 
 @api_router.post("/questions/{question_id}/answers", response_model=APIResponse)
 async def create_answer(question_id: str, answer_data: AnswerCreate, current_user: User = Depends(get_current_user)):
@@ -541,15 +638,214 @@ async def create_answer(question_id: str, answer_data: AnswerCreate, current_use
     
     answer = Answer(**answer_data.dict(), author_id=current_user.id)
     await db.answers.insert_one(answer.dict())
+    
+    # Award XP for answering
+    await award_xp(current_user.id, 15, "answer_question")
+    
+    # Update question status if this is the first answer
+    answer_count = await db.answers.count_documents({"question_id": question_id})
+    if answer_count == 1:
+        await db.questions.update_one(
+            {"id": question_id},
+            {"$set": {"status": QuestionStatus.ANSWERED.value}}
+        )
+    
     return APIResponse(success=True, message="Answer created successfully", data=answer.dict())
 
-@api_router.get("/questions/{question_id}/answers", response_model=APIResponse)
-async def get_question_answers(question_id: str):
-    answers = await db.answers.find({"question_id": question_id}).sort("created_at", -1).to_list(100)
+@api_router.post("/questions/{question_id}/vote", response_model=APIResponse)
+async def vote_question(question_id: str, vote_data: Dict[str, str], current_user: User = Depends(get_current_user)):
+    """Vote on a question (upvote/downvote)"""
+    question = await db.questions.find_one({"id": question_id})
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    # Can't vote on your own question
+    if question["author_id"] == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot vote on your own question")
+    
+    vote_type = vote_data.get("vote_type")  # "upvote" or "downvote"
+    if vote_type not in ["upvote", "downvote"]:
+        raise HTTPException(status_code=400, detail="Invalid vote type")
+    
+    # Check existing vote
+    existing_vote = await db.question_votes.find_one({
+        "user_id": current_user.id,
+        "question_id": question_id
+    })
+    
+    if existing_vote:
+        old_vote_type = existing_vote["vote_type"]
+        if old_vote_type == vote_type:
+            # Remove vote (toggle off)
+            await db.question_votes.delete_one({"_id": existing_vote["_id"]})
+            vote_delta = -1 if vote_type == "upvote" else 1
+            await db.questions.update_one(
+                {"id": question_id},
+                {"$inc": {"upvotes" if vote_type == "upvote" else "downvotes": vote_delta}}
+            )
+            return APIResponse(success=True, message="Vote removed successfully")
+        else:
+            # Change vote
+            await db.question_votes.update_one(
+                {"_id": existing_vote["_id"]},
+                {"$set": {"vote_type": vote_type}}
+            )
+            # Update counters (remove old, add new)
+            old_field = "upvotes" if old_vote_type == "upvote" else "downvotes"
+            new_field = "upvotes" if vote_type == "upvote" else "downvotes"
+            await db.questions.update_one(
+                {"id": question_id},
+                {
+                    "$inc": {old_field: -1, new_field: 1}
+                }
+            )
+            return APIResponse(success=True, message="Vote updated successfully")
+    else:
+        # New vote
+        from models import QuestionVote
+        vote = QuestionVote(
+            user_id=current_user.id,
+            question_id=question_id,
+            vote_type=vote_type
+        )
+        await db.question_votes.insert_one(vote.dict())
+        
+        # Update question counters
+        field = "upvotes" if vote_type == "upvote" else "downvotes"
+        await db.questions.update_one(
+            {"id": question_id},
+            {"$inc": {field: 1}}
+        )
+        
+        # Award small XP for voting
+        await award_xp(current_user.id, 2, "vote_question")
+        
+        return APIResponse(success=True, message="Vote recorded successfully")
+
+@api_router.post("/answers/{answer_id}/vote", response_model=APIResponse)
+async def vote_answer(answer_id: str, vote_data: Dict[str, str], current_user: User = Depends(get_current_user)):
+    """Vote on an answer (upvote/downvote)"""
+    answer = await db.answers.find_one({"id": answer_id})
+    if not answer:
+        raise HTTPException(status_code=404, detail="Answer not found")
+    
+    # Can't vote on your own answer
+    if answer["author_id"] == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot vote on your own answer")
+    
+    vote_type = vote_data.get("vote_type")  # "upvote" or "downvote"
+    if vote_type not in ["upvote", "downvote"]:
+        raise HTTPException(status_code=400, detail="Invalid vote type")
+    
+    # Check existing vote
+    existing_vote = await db.answer_votes.find_one({
+        "user_id": current_user.id,
+        "answer_id": answer_id
+    })
+    
+    if existing_vote:
+        old_vote_type = existing_vote["vote_type"]
+        if old_vote_type == vote_type:
+            # Remove vote (toggle off)
+            await db.answer_votes.delete_one({"_id": existing_vote["_id"]})
+            vote_delta = -1 if vote_type == "upvote" else 1
+            await db.answers.update_one(
+                {"id": answer_id},
+                {"$inc": {"upvotes" if vote_type == "upvote" else "downvotes": vote_delta}}
+            )
+            return APIResponse(success=True, message="Vote removed successfully")
+        else:
+            # Change vote
+            await db.answer_votes.update_one(
+                {"_id": existing_vote["_id"]},
+                {"$set": {"vote_type": vote_type}}
+            )
+            # Update counters
+            old_field = "upvotes" if old_vote_type == "upvote" else "downvotes"
+            new_field = "upvotes" if vote_type == "upvote" else "downvotes"
+            await db.answers.update_one(
+                {"id": answer_id},
+                {
+                    "$inc": {old_field: -1, new_field: 1}
+                }
+            )
+            return APIResponse(success=True, message="Vote updated successfully")
+    else:
+        # New vote
+        from models import AnswerVote
+        vote = AnswerVote(
+            user_id=current_user.id,
+            answer_id=answer_id,
+            vote_type=vote_type
+        )
+        await db.answer_votes.insert_one(vote.dict())
+        
+        # Update answer counters
+        field = "upvotes" if vote_type == "upvote" else "downvotes"
+        await db.answers.update_one(
+            {"id": answer_id},
+            {"$inc": {field: 1}}
+        )
+        
+        # Award small XP for voting and bonus to answer author for upvotes
+        await award_xp(current_user.id, 2, "vote_answer")
+        if vote_type == "upvote":
+            await award_xp(answer["author_id"], 5, "receive_upvote")
+        
+        return APIResponse(success=True, message="Vote recorded successfully")
+
+@api_router.post("/answers/{answer_id}/accept", response_model=APIResponse)
+async def accept_answer(answer_id: str, current_user: User = Depends(get_current_user)):
+    """Mark an answer as accepted (only by question author)"""
+    answer = await db.answers.find_one({"id": answer_id})
+    if not answer:
+        raise HTTPException(status_code=404, detail="Answer not found")
+    
+    # Get the question to verify ownership
+    question = await db.questions.find_one({"id": answer["question_id"]})
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    if question["author_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Only question author can accept answers")
+    
+    # Unaccept any previously accepted answers for this question
+    await db.answers.update_many(
+        {"question_id": answer["question_id"]},
+        {"$set": {"is_accepted": False}}
+    )
+    
+    # Accept this answer
+    await db.answers.update_one(
+        {"id": answer_id},
+        {"$set": {"is_accepted": True}}
+    )
+    
+    # Award bonus XP to answer author
+    await award_xp(answer["author_id"], 25, "answer_accepted")
+    
+    return APIResponse(success=True, message="Answer accepted successfully")
+
+@api_router.get("/questions/user/my", response_model=APIResponse)
+async def get_my_questions(current_user: User = Depends(get_current_user)):
+    """Get current user's questions"""
+    questions = await db.questions.find({"author_id": current_user.id}).sort("created_at", -1).to_list(50)
+    
+    # Enrich with answer counts
+    enriched_questions = []
+    for question in questions:
+        question_obj = Question(**question)
+        question_dict = question_obj.dict()
+        
+        answer_count = await db.answers.count_documents({"question_id": question_obj.id})
+        question_dict["answer_count"] = answer_count
+        
+        enriched_questions.append(question_dict)
+    
     return APIResponse(
-        success=True, 
-        message="Answers retrieved successfully",
-        data=[Answer(**answer) for answer in answers]
+        success=True,
+        message="User questions retrieved successfully",
+        data=enriched_questions
     )
 
 # Enhanced Legal Myths endpoints for Myth-Busting Feed
