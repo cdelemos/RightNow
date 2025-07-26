@@ -307,6 +307,16 @@ class ChatResponseData(BaseModel):
     xp_awarded: int = 0
     requires_state: bool = False
 
+# User interaction with myths
+class UserMythProgress(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    myth_id: str
+    read_at: datetime = Field(default_factory=datetime.utcnow)
+    liked: bool = False
+    time_spent: int = 0  # seconds
+    comprehension_score: Optional[int] = None  # 1-5 rating
+
 # Emergency SOS Models
 class EmergencyContact(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
