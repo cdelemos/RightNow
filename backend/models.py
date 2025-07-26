@@ -247,30 +247,59 @@ class UserLearningProgress(BaseModel):
     last_accessed: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
 
-# AI Query Models
-class AIQueryType(str, Enum):
-    LEGAL_QUESTION = "legal_question"
-    STATUTE_LOOKUP = "statute_lookup"
-    CASE_ANALYSIS = "case_analysis"
-    GENERAL_LEGAL = "general_legal"
-
-class AIQuery(BaseModel):
+# AI Chat Models
+class ChatMessage(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
     user_id: str
-    query_text: str
-    query_type: AIQueryType
-    context: Optional[Dict[str, Any]] = {}
+    message: str
     response: Optional[str] = None
-    suggested_statutes: List[str] = []  # Statute IDs
+    user_state: Optional[str] = None
+    message_type: str = "user"  # user, assistant, system
     confidence_score: Optional[float] = None
-    processing_time: Optional[float] = None
+    suggested_scripts: List[Dict[str, Any]] = []
+    upl_risk_flagged: bool = False
+    upl_warning: Optional[str] = None
+    xp_awarded: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
     responded_at: Optional[datetime] = None
 
-class AIQueryCreate(BaseModel):
-    query_text: str
-    query_type: AIQueryType
-    context: Optional[Dict[str, Any]] = {}
+class ChatSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_state: Optional[str] = None
+    message_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_activity: datetime = Field(default_factory=datetime.utcnow)
+    is_active: bool = True
+
+class ChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+    user_state: Optional[str] = None
+
+class ScriptTemplate(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    category: str  # traffic_stop, ice_encounter, police_search, etc.
+    scenario: str
+    script_text: str
+    legal_basis: str
+    keywords: List[str] = []
+    state_specific: bool = False
+    applicable_states: List[str] = []
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ChatResponseData(BaseModel):
+    response: str
+    session_id: str
+    confidence_score: Optional[float] = None
+    upl_risk_flagged: bool = False
+    upl_warning: Optional[str] = None
+    suggested_scripts: List[Dict[str, Any]] = []
+    suggested_statutes: List[str] = []
+    xp_awarded: int = 0
+    requires_state: bool = False
 
 # Emergency SOS Models
 class EmergencyContact(BaseModel):
