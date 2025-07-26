@@ -1866,6 +1866,18 @@ class BackendTester:
         self.test_myth_view_and_engagement_counters()
         self.test_myth_daily_reset_logic()
         
+        # Scenario-Based Legal Simulations tests (NEW FEATURE)
+        print("\n🎮 SCENARIO-BASED LEGAL SIMULATIONS TESTS")
+        print("-" * 50)
+        self.test_scenario_based_legal_simulations()
+        self.test_simulation_session_management()
+        self.test_simulation_choice_making()
+        self.test_simulation_progress_tracking()
+        self.test_simulation_completion_and_xp_awards()
+        self.test_simulation_user_history()
+        self.test_simulation_scenario_content_quality()
+        self.test_simulation_node_structure_and_choices()
+        
         # Original feature tests
         print("\n🔧 CORE FEATURE TESTS")
         print("-" * 30)
