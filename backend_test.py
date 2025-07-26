@@ -1300,6 +1300,528 @@ class BackendTester:
         else:
             self.log_test("Daily Myth Selection Logic", False, "Daily myth selection failed")
     
+    def test_scenario_based_legal_simulations(self):
+        """Test comprehensive Scenario-Based Legal Simulations functionality"""
+        if not self.auth_token:
+            self.log_test("Scenario-Based Legal Simulations", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Test 1: Get available simulations with user progress data
+        success, data, status_code = self.make_request("GET", "/simulations", headers=headers)
+        
+        if success and data.get("success"):
+            simulations_data = data.get("data", {})
+            simulations = simulations_data.get("items", [])
+            total_simulations = simulations_data.get("total", 0)
+            
+            if total_simulations >= 3:  # Should have 3 initialized scenarios
+                self.log_test("Simulation Database Initialization", True, f"Found {total_simulations} simulation scenarios")
+                
+                # Verify simulation structure and user progress data
+                if simulations:
+                    first_sim = simulations[0]
+                    required_fields = ["id", "title", "description", "category", "difficulty_level", "estimated_duration"]
+                    user_progress_fields = ["user_completed", "user_best_score", "user_attempts"]
+                    
+                    has_required_fields = all(field in first_sim for field in required_fields)
+                    has_progress_fields = all(field in first_sim for field in user_progress_fields)
+                    
+                    if has_required_fields and has_progress_fields:
+                        self.log_test("Simulation Structure", True, "Simulations have proper structure with user progress data")
+                        
+                        # Store simulation ID for further testing
+                        self.test_simulation_id = first_sim.get("id")
+                        self.test_simulation_title = first_sim.get("title", "")
+                    else:
+                        self.log_test("Simulation Structure", False, "Simulations missing required fields or user progress data")
+                else:
+                    self.log_test("Simulation Structure", False, "No simulations returned despite total count > 0")
+            else:
+                self.log_test("Simulation Database Initialization", False, f"Insufficient simulations ({total_simulations} found, expected ≥3)")
+        else:
+            self.log_test("Scenario-Based Legal Simulations", False, "Failed to retrieve simulations",
+                         {"status_code": status_code, "response": data})
+        
+        # Test 2: Category filtering
+        categories = ["traffic_stop", "police_encounter", "housing_dispute"]
+        for category in categories:
+            success, data, status_code = self.make_request("GET", "/simulations", 
+                                                         {"category": category}, headers)
+            
+            if success and data.get("success"):
+                filtered_sims = data.get("data", {}).get("items", [])
+                category_match = all(sim.get("category") == category for sim in filtered_sims) if filtered_sims else True
+                
+                if category_match:
+                    self.log_test(f"Simulation Category Filter ({category})", True, 
+                                 f"Category filtering working ({len(filtered_sims)} {category} simulations)")
+                else:
+                    self.log_test(f"Simulation Category Filter ({category})", False, "Category filtering not working correctly")
+            else:
+                self.log_test(f"Simulation Category Filter ({category})", False, f"Failed to filter by {category}")
+        
+        # Test 3: Difficulty level filtering
+        success, data, status_code = self.make_request("GET", "/simulations", 
+                                                     {"difficulty": 2}, headers)
+        
+        if success and data.get("success"):
+            difficulty_sims = data.get("data", {}).get("items", [])
+            difficulty_match = all(sim.get("difficulty_level") == 2 for sim in difficulty_sims) if difficulty_sims else True
+            
+            if difficulty_match:
+                self.log_test("Simulation Difficulty Filter", True, f"Difficulty filtering working ({len(difficulty_sims)} level 2 simulations)")
+            else:
+                self.log_test("Simulation Difficulty Filter", False, "Difficulty filtering not working correctly")
+        else:
+            self.log_test("Simulation Difficulty Filter", False, "Failed to filter by difficulty level")
+    
+    def test_simulation_session_management(self):
+        """Test simulation start process and session creation"""
+        if not self.auth_token or not hasattr(self, 'test_simulation_id'):
+            self.log_test("Simulation Session Management", False, "No auth token or simulation ID available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        simulation_id = self.test_simulation_id
+        
+        # Test starting a new simulation session
+        success, data, status_code = self.make_request("POST", f"/simulations/{simulation_id}/start", {}, headers)
+        
+        if success and data.get("success"):
+            session_data = data.get("data", {})
+            progress_id = session_data.get("progress_id")
+            scenario = session_data.get("scenario", {})
+            current_node = session_data.get("current_node", {})
+            
+            if progress_id and scenario and current_node:
+                self.log_test("Simulation Start", True, f"Successfully started simulation session: {progress_id[:8]}...")
+                
+                # Verify scenario structure
+                scenario_fields = ["id", "title", "description", "category", "scenario_nodes", "start_node_id"]
+                has_scenario_fields = all(field in scenario for field in scenario_fields)
+                
+                if has_scenario_fields:
+                    self.log_test("Scenario Structure", True, "Scenario contains all required fields and nodes")
+                    
+                    # Verify current node structure
+                    node_fields = ["id", "title", "description", "choices"]
+                    has_node_fields = all(field in current_node for field in node_fields)
+                    
+                    if has_node_fields and len(current_node.get("choices", [])) > 0:
+                        self.log_test("Starting Node Structure", True, f"Starting node has {len(current_node['choices'])} choices")
+                        
+                        # Store for choice testing
+                        self.test_progress_id = progress_id
+                        self.test_current_node = current_node
+                    else:
+                        self.log_test("Starting Node Structure", False, "Starting node missing required fields or choices")
+                else:
+                    self.log_test("Scenario Structure", False, "Scenario missing required fields")
+            else:
+                self.log_test("Simulation Start", False, "Simulation start response missing required data")
+        else:
+            self.log_test("Simulation Start", False, "Failed to start simulation session",
+                         {"status_code": status_code, "response": data})
+    
+    def test_simulation_choice_making(self):
+        """Test choice making and node progression through scenario trees"""
+        if not self.auth_token or not hasattr(self, 'test_progress_id'):
+            self.log_test("Simulation Choice Making", False, "No auth token or progress ID available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        progress_id = self.test_progress_id
+        current_node = self.test_current_node
+        
+        # Test making a choice (select the first choice)
+        choice_data = {"choice_index": 0}
+        success, data, status_code = self.make_request("POST", f"/simulations/progress/{progress_id}/choice", 
+                                                     choice_data, headers)
+        
+        if success and data.get("success"):
+            choice_response = data.get("data", {})
+            completed = choice_response.get("completed", False)
+            current_score = choice_response.get("current_score", 0)
+            choice_feedback = choice_response.get("choice_feedback", "")
+            points_earned = choice_response.get("points_earned", 0)
+            
+            if not completed:
+                # Simulation continues
+                next_node = choice_response.get("current_node", {})
+                
+                if next_node and next_node.get("id"):
+                    self.log_test("Choice Making (Continue)", True, 
+                                 f"Choice processed, score: {current_score}, points: {points_earned}")
+                    
+                    # Verify feedback and consequences
+                    if choice_feedback:
+                        self.log_test("Choice Feedback", True, "Choice feedback provided to user")
+                    else:
+                        self.log_test("Choice Feedback", False, "No feedback provided for choice")
+                    
+                    # Test invalid choice
+                    invalid_choice = {"choice_index": 999}
+                    success, data, status_code = self.make_request("POST", f"/simulations/progress/{progress_id}/choice", 
+                                                                 invalid_choice, headers)
+                    
+                    if not success and status_code == 400:
+                        self.log_test("Invalid Choice Handling", True, "Invalid choices properly rejected")
+                    else:
+                        self.log_test("Invalid Choice Handling", False, "Invalid choice validation not working")
+                    
+                    # Store updated progress for completion test
+                    self.test_next_node = next_node
+                else:
+                    self.log_test("Choice Making (Continue)", False, "Next node not provided or invalid")
+            else:
+                # Simulation completed on first choice
+                final_score = choice_response.get("final_score", 0)
+                total_xp = choice_response.get("total_xp_earned", 0)
+                outcome_message = choice_response.get("outcome_message", "")
+                
+                self.log_test("Choice Making (Complete)", True, 
+                             f"Simulation completed, final score: {final_score}, XP: {total_xp}")
+                
+                if outcome_message:
+                    self.log_test("Completion Outcome", True, "Completion outcome message provided")
+                else:
+                    self.log_test("Completion Outcome", False, "No completion outcome message")
+        else:
+            self.log_test("Simulation Choice Making", False, "Failed to process choice",
+                         {"status_code": status_code, "response": data})
+    
+    def test_simulation_progress_tracking(self):
+        """Test simulation progress retrieval and state management"""
+        if not self.auth_token or not hasattr(self, 'test_progress_id'):
+            self.log_test("Simulation Progress Tracking", False, "No auth token or progress ID available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        progress_id = self.test_progress_id
+        
+        # Test getting current simulation progress
+        success, data, status_code = self.make_request("GET", f"/simulations/progress/{progress_id}", headers=headers)
+        
+        if success and data.get("success"):
+            progress_data = data.get("data", {})
+            
+            # Verify progress structure
+            progress_fields = ["id", "user_id", "scenario_id", "current_node_id", "path_taken", "score", "completed"]
+            has_progress_fields = all(field in progress_data for field in progress_fields)
+            
+            if has_progress_fields:
+                path_taken = progress_data.get("path_taken", [])
+                score = progress_data.get("score", 0)
+                completed = progress_data.get("completed", False)
+                
+                self.log_test("Progress Tracking Structure", True, "Progress data has all required fields")
+                
+                # Verify path tracking
+                if len(path_taken) > 0:
+                    first_choice = path_taken[0]
+                    choice_fields = ["node_id", "choice_index", "choice_text", "timestamp", "points_earned"]
+                    has_choice_fields = all(field in first_choice for field in choice_fields)
+                    
+                    if has_choice_fields:
+                        self.log_test("Path Tracking", True, f"Choice path properly tracked ({len(path_taken)} choices)")
+                    else:
+                        self.log_test("Path Tracking", False, "Path tracking missing required choice fields")
+                else:
+                    self.log_test("Path Tracking", True, "No choices made yet (valid for new simulation)")
+                
+                # Verify score calculation
+                if score >= 0:
+                    self.log_test("Score Calculation", True, f"Score tracking working (current: {score})")
+                else:
+                    self.log_test("Score Calculation", False, "Invalid score value")
+            else:
+                self.log_test("Progress Tracking Structure", False, "Progress data missing required fields")
+        else:
+            self.log_test("Simulation Progress Tracking", False, "Failed to retrieve progress",
+                         {"status_code": status_code, "response": data})
+    
+    def test_simulation_completion_and_xp_awards(self):
+        """Test simulation completion detection and XP integration"""
+        if not self.auth_token:
+            self.log_test("Simulation Completion", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get initial user XP
+        success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+        initial_xp = 0
+        if success and data.get("success"):
+            initial_xp = data.get("data", {}).get("xp", 0)
+        
+        # Start a new simulation to test completion
+        success, data, status_code = self.make_request("GET", "/simulations", {"page": 1, "per_page": 1}, headers)
+        
+        if success and data.get("success"):
+            simulations = data.get("data", {}).get("items", [])
+            
+            if simulations:
+                simulation_id = simulations[0].get("id")
+                
+                # Start simulation
+                success, data, status_code = self.make_request("POST", f"/simulations/{simulation_id}/start", {}, headers)
+                
+                if success and data.get("success"):
+                    progress_id = data.get("data", {}).get("progress_id")
+                    
+                    # Try to complete simulation by making choices until end
+                    max_choices = 10  # Prevent infinite loops
+                    choices_made = 0
+                    completed = False
+                    
+                    while choices_made < max_choices and not completed:
+                        # Make a choice (always choose first option)
+                        choice_data = {"choice_index": 0}
+                        success, data, status_code = self.make_request("POST", f"/simulations/progress/{progress_id}/choice", 
+                                                                     choice_data, headers)
+                        
+                        if success and data.get("success"):
+                            choice_response = data.get("data", {})
+                            completed = choice_response.get("completed", False)
+                            choices_made += 1
+                            
+                            if completed:
+                                # Simulation completed
+                                final_score = choice_response.get("final_score", 0)
+                                total_xp = choice_response.get("total_xp_earned", 0)
+                                outcome_message = choice_response.get("outcome_message", "")
+                                legal_explanation = choice_response.get("legal_explanation", "")
+                                
+                                self.log_test("Simulation Completion Detection", True, 
+                                             f"Simulation completed after {choices_made} choices")
+                                
+                                # Verify completion data
+                                if final_score >= 0 and total_xp > 0:
+                                    self.log_test("Completion Score Calculation", True, 
+                                                 f"Final score: {final_score}, XP earned: {total_xp}")
+                                else:
+                                    self.log_test("Completion Score Calculation", False, "Invalid completion scores")
+                                
+                                if outcome_message and legal_explanation:
+                                    self.log_test("Educational Feedback", True, "Outcome message and legal explanation provided")
+                                else:
+                                    self.log_test("Educational Feedback", False, "Missing educational feedback")
+                                
+                                # Verify XP integration
+                                import time
+                                time.sleep(1)  # Allow for async XP processing
+                                
+                                success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+                                if success and data.get("success"):
+                                    final_user_xp = data.get("data", {}).get("xp", 0)
+                                    xp_gained = final_user_xp - initial_xp
+                                    
+                                    if xp_gained > 0:
+                                        self.log_test("XP Integration", True, f"XP properly awarded ({xp_gained} XP gained)")
+                                    else:
+                                        self.log_test("XP Integration", False, f"No XP gained (initial: {initial_xp}, final: {final_user_xp})")
+                                else:
+                                    self.log_test("XP Integration", False, "Failed to verify XP award")
+                                
+                                break
+                        else:
+                            self.log_test("Simulation Completion", False, f"Failed to make choice {choices_made + 1}")
+                            break
+                    
+                    if not completed and choices_made >= max_choices:
+                        self.log_test("Simulation Completion", False, "Simulation did not complete within expected choices")
+                else:
+                    self.log_test("Simulation Completion", False, "Failed to start simulation for completion test")
+            else:
+                self.log_test("Simulation Completion", False, "No simulations available for completion test")
+        else:
+            self.log_test("Simulation Completion", False, "Failed to get simulations for completion test")
+    
+    def test_simulation_user_history(self):
+        """Test user's completed simulation history"""
+        if not self.auth_token:
+            self.log_test("Simulation User History", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Test getting user's simulation history
+        success, data, status_code = self.make_request("GET", "/simulations/user/history", headers=headers)
+        
+        if success and data.get("success"):
+            history = data.get("data", [])
+            
+            self.log_test("Simulation History Retrieval", True, f"Retrieved {len(history)} completed simulations")
+            
+            # Verify history structure if any completed simulations exist
+            if history:
+                first_record = history[0]
+                history_fields = ["id", "scenario_id", "score", "completed_at", "scenario_title", "scenario_category"]
+                has_history_fields = all(field in first_record for field in history_fields)
+                
+                if has_history_fields:
+                    self.log_test("History Data Structure", True, "History records have proper structure with scenario info")
+                    
+                    # Verify completion data
+                    completed_at = first_record.get("completed_at")
+                    score = first_record.get("score", 0)
+                    
+                    if completed_at and score >= 0:
+                        self.log_test("History Data Quality", True, "History contains valid completion data")
+                    else:
+                        self.log_test("History Data Quality", False, "History data missing completion information")
+                else:
+                    self.log_test("History Data Structure", False, "History records missing required fields")
+            else:
+                self.log_test("History Data Structure", True, "No completed simulations yet (valid for new user)")
+        else:
+            self.log_test("Simulation User History", False, "Failed to retrieve simulation history",
+                         {"status_code": status_code, "response": data})
+    
+    def test_simulation_scenario_content_quality(self):
+        """Test the quality and completeness of simulation scenario content"""
+        if not self.auth_token:
+            self.log_test("Simulation Content Quality", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get all simulations to test content
+        success, data, status_code = self.make_request("GET", "/simulations", {"per_page": 10}, headers)
+        
+        if success and data.get("success"):
+            simulations = data.get("data", {}).get("items", [])
+            
+            if simulations:
+                # Test each simulation's content quality
+                for sim in simulations:
+                    sim_title = sim.get("title", "Unknown")
+                    
+                    # Check basic content requirements
+                    has_description = len(sim.get("description", "")) > 50
+                    has_objectives = len(sim.get("learning_objectives", [])) >= 3
+                    has_legal_context = len(sim.get("legal_context", "")) > 30
+                    has_applicable_laws = len(sim.get("applicable_laws", [])) > 0
+                    
+                    content_quality = has_description and has_objectives and has_legal_context and has_applicable_laws
+                    
+                    if content_quality:
+                        self.log_test(f"Content Quality ({sim_title[:30]}...)", True, "Comprehensive educational content")
+                    else:
+                        self.log_test(f"Content Quality ({sim_title[:30]}...)", False, "Content missing educational elements")
+                
+                # Test specific scenarios mentioned in requirements
+                expected_scenarios = ["Traffic Stop", "ICE Encounter", "Housing Dispute"]
+                found_scenarios = []
+                
+                for sim in simulations:
+                    title = sim.get("title", "")
+                    for expected in expected_scenarios:
+                        if expected.lower() in title.lower():
+                            found_scenarios.append(expected)
+                            break
+                
+                if len(found_scenarios) >= 3:
+                    self.log_test("Required Scenarios", True, f"Found all required scenarios: {', '.join(found_scenarios)}")
+                else:
+                    self.log_test("Required Scenarios", False, f"Missing scenarios. Found: {', '.join(found_scenarios)}")
+                
+                # Test difficulty levels
+                difficulty_levels = set(sim.get("difficulty_level", 1) for sim in simulations)
+                if len(difficulty_levels) > 1:
+                    self.log_test("Difficulty Variation", True, f"Multiple difficulty levels: {sorted(difficulty_levels)}")
+                else:
+                    self.log_test("Difficulty Variation", False, "All simulations have same difficulty level")
+            else:
+                self.log_test("Simulation Content Quality", False, "No simulations available for content testing")
+        else:
+            self.log_test("Simulation Content Quality", False, "Failed to retrieve simulations for content testing")
+    
+    def test_simulation_node_structure_and_choices(self):
+        """Test the structure and quality of simulation nodes and choices"""
+        if not self.auth_token:
+            self.log_test("Simulation Node Structure", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Start a simulation to examine node structure
+        success, data, status_code = self.make_request("GET", "/simulations", {"per_page": 1}, headers)
+        
+        if success and data.get("success"):
+            simulations = data.get("data", {}).get("items", [])
+            
+            if simulations:
+                simulation_id = simulations[0].get("id")
+                
+                # Start simulation to get node structure
+                success, data, status_code = self.make_request("POST", f"/simulations/{simulation_id}/start", {}, headers)
+                
+                if success and data.get("success"):
+                    scenario = data.get("data", {}).get("scenario", {})
+                    current_node = data.get("data", {}).get("current_node", {})
+                    
+                    # Test scenario node structure
+                    scenario_nodes = scenario.get("scenario_nodes", [])
+                    if len(scenario_nodes) >= 3:  # Should have multiple nodes for branching
+                        self.log_test("Scenario Node Count", True, f"Scenario has {len(scenario_nodes)} nodes for branching paths")
+                        
+                        # Test node structure quality
+                        nodes_with_choices = 0
+                        end_nodes = 0
+                        total_choices = 0
+                        
+                        for node in scenario_nodes:
+                            choices = node.get("choices", [])
+                            is_end = node.get("is_end_node", False)
+                            
+                            if is_end:
+                                end_nodes += 1
+                            elif len(choices) > 0:
+                                nodes_with_choices += 1
+                                total_choices += len(choices)
+                                
+                                # Test choice structure
+                                for choice in choices:
+                                    choice_fields = ["choice_text", "feedback", "xp_value"]
+                                    has_choice_fields = all(field in choice for field in choice_fields)
+                                    
+                                    if not has_choice_fields:
+                                        self.log_test("Choice Structure", False, "Choices missing required fields")
+                                        return
+                        
+                        if nodes_with_choices > 0 and end_nodes > 0:
+                            self.log_test("Node Structure Quality", True, 
+                                         f"{nodes_with_choices} choice nodes, {end_nodes} end nodes, {total_choices} total choices")
+                        else:
+                            self.log_test("Node Structure Quality", False, "Invalid node structure (no choices or end nodes)")
+                        
+                        # Test current node choices
+                        current_choices = current_node.get("choices", [])
+                        if len(current_choices) >= 2:  # Should have multiple meaningful choices
+                            self.log_test("Starting Node Choices", True, f"Starting node has {len(current_choices)} choices")
+                            
+                            # Test choice quality
+                            choice_texts = [choice.get("choice_text", "") for choice in current_choices]
+                            meaningful_choices = [text for text in choice_texts if len(text) > 20]
+                            
+                            if len(meaningful_choices) == len(choice_texts):
+                                self.log_test("Choice Quality", True, "All choices have meaningful descriptive text")
+                            else:
+                                self.log_test("Choice Quality", False, "Some choices have insufficient descriptive text")
+                        else:
+                            self.log_test("Starting Node Choices", False, "Starting node has insufficient choices")
+                    else:
+                        self.log_test("Scenario Node Count", False, f"Insufficient nodes for branching ({len(scenario_nodes)} found)")
+                else:
+                    self.log_test("Simulation Node Structure", False, "Failed to start simulation for node testing")
+            else:
+                self.log_test("Simulation Node Structure", False, "No simulations available for node testing")
+        else:
+            self.log_test("Simulation Node Structure", False, "Failed to retrieve simulations for node testing")
+    
     def run_all_tests(self):
         """Run all backend tests"""
         print("🚀 Starting AI-Powered Legal Query Assistant Backend Tests")
