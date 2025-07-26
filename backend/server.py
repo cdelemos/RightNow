@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 import math
 import json
 import re
+import uuid
 from emergentintegrations.llm.openai import LlmChat
 
 # Import our models
