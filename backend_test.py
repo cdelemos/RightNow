@@ -968,7 +968,7 @@ class BackendTester:
     
     def run_all_tests(self):
         """Run all backend tests"""
-        print("🚀 Starting Enhanced Real-Time Statute Lookup Engine Backend Tests")
+        print("🚀 Starting AI-Powered Legal Query Assistant Backend Tests")
         print("=" * 70)
         
         # Core API tests
@@ -979,6 +979,15 @@ class BackendTester:
         self.test_user_login()
         self.test_protected_route_without_auth()
         self.test_protected_route_with_auth()
+        
+        # AI-Powered Legal Query Assistant tests (NEW FEATURE)
+        print("\n🤖 AI-POWERED LEGAL QUERY ASSISTANT TESTS")
+        print("-" * 50)
+        self.test_ai_chat_system()
+        self.test_ai_sessions_management()
+        self.test_script_templates_system()
+        self.test_ai_state_awareness()
+        self.test_ai_query_system()  # Legacy endpoint
         
         # Enhanced Statute Lookup Engine tests
         print("\n📚 ENHANCED STATUTE LOOKUP ENGINE TESTS")
@@ -1000,7 +1009,6 @@ class BackendTester:
         self.test_legal_myths_system()
         self.test_simulations_system()
         self.test_learning_paths_system()
-        self.test_ai_query_system()
         self.test_user_progress_system()
         
         # Summary
