@@ -637,19 +637,324 @@ async def get_learning_paths(
         data=[LearningPath(**path) for path in paths]
     )
 
-# AI Query endpoints (placeholder - will need AI integration)
+# AI Chat endpoints
+@api_router.post("/ai/chat", response_model=APIResponse)
+async def chat_with_ai(request: ChatRequest, current_user: User = Depends(get_current_user)):
+    """Main AI chat endpoint with comprehensive legal assistance"""
+    if not openai_integration:
+        raise HTTPException(status_code=503, detail="AI service unavailable")
+    
+    try:
+        # Get or create chat session
+        session_id = request.session_id
+        if not session_id:
+            session = ChatSession(user_id=current_user.id, user_state=request.user_state)
+            await db.chat_sessions.insert_one(session.dict())
+            session_id = session.id
+        else:
+            session = await db.chat_sessions.find_one({"id": session_id, "user_id": current_user.id})
+            if not session:
+                raise HTTPException(status_code=404, detail="Chat session not found")
+        
+        # Check UPL risk first
+        upl_risk, upl_warning = check_upl_risk(request.message)
+        
+        # Check if user is asking for scripts
+        script_request = detect_script_request(request.message)
+        suggested_scripts = []
+        
+        if script_request:
+            suggested_scripts = await get_relevant_scripts(script_request, request.user_state)
+        
+        # Prepare context for AI
+        context = await prepare_ai_context(current_user.id, request.user_state, session_id)
+        
+        # Generate AI response
+        ai_response = await generate_ai_response(
+            request.message, 
+            context, 
+            request.user_state, 
+            upl_risk
+        )
+        
+        # Save chat message
+        chat_message = ChatMessage(
+            session_id=session_id,
+            user_id=current_user.id,
+            message=request.message,
+            response=ai_response["response"],
+            user_state=request.user_state,
+            confidence_score=ai_response.get("confidence_score", 0.8),
+            suggested_scripts=suggested_scripts,
+            upl_risk_flagged=upl_risk,
+            upl_warning=upl_warning,
+            xp_awarded=10 if not upl_risk else 5  # Award XP for queries
+        )
+        
+        await db.chat_messages.insert_one(chat_message.dict())
+        
+        # Award XP to user
+        await award_xp(current_user.id, chat_message.xp_awarded, "ai_query")
+        
+        # Update session
+        await db.chat_sessions.update_one(
+            {"id": session_id},
+            {
+                "$set": {
+                    "last_activity": datetime.utcnow(),
+                    "user_state": request.user_state
+                },
+                "$inc": {"message_count": 1}
+            }
+        )
+        
+        # Check if response requires state clarification
+        requires_state = not request.user_state and is_state_dependent_query(request.message)
+        
+        response_data = ChatResponseData(
+            response=ai_response["response"],
+            session_id=session_id,
+            confidence_score=ai_response.get("confidence_score", 0.8),
+            upl_risk_flagged=upl_risk,
+            upl_warning=upl_warning,
+            suggested_scripts=suggested_scripts,
+            suggested_statutes=ai_response.get("suggested_statutes", []),
+            xp_awarded=chat_message.xp_awarded,
+            requires_state=requires_state
+        )
+        
+        return APIResponse(
+            success=True,
+            message="AI response generated successfully",
+            data=response_data.dict()
+        )
+        
+    except Exception as e:
+        logging.error(f"AI chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI chat error: {str(e)}")
+
+@api_router.get("/ai/sessions", response_model=APIResponse)
+async def get_chat_sessions(current_user: User = Depends(get_current_user)):
+    """Get user's chat sessions"""
+    sessions = await db.chat_sessions.find(
+        {"user_id": current_user.id, "is_active": True}
+    ).sort("last_activity", -1).limit(10).to_list(10)
+    
+    return APIResponse(
+        success=True,
+        message="Chat sessions retrieved successfully",
+        data=[ChatSession(**session) for session in sessions]
+    )
+
+@api_router.get("/ai/sessions/{session_id}/messages", response_model=APIResponse)
+async def get_chat_history(session_id: str, current_user: User = Depends(get_current_user)):
+    """Get chat history for a session"""
+    # Verify session belongs to user
+    session = await db.chat_sessions.find_one({"id": session_id, "user_id": current_user.id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+    
+    messages = await db.chat_messages.find(
+        {"session_id": session_id}
+    ).sort("created_at", 1).to_list(100)
+    
+    return APIResponse(
+        success=True,
+        message="Chat history retrieved successfully",
+        data=[ChatMessage(**message) for message in messages]
+    )
+
+@api_router.get("/ai/scripts", response_model=APIResponse)
+async def get_script_templates(category: Optional[str] = None, state: Optional[str] = None):
+    """Get available script templates"""
+    query = {}
+    if category:
+        query["category"] = category
+    if state:
+        query["$or"] = [
+            {"state_specific": False},
+            {"applicable_states": {"$in": [state]}}
+        ]
+    
+    scripts = await db.script_templates.find(query).to_list(50)
+    return APIResponse(
+        success=True,
+        message="Script templates retrieved successfully",
+        data=[ScriptTemplate(**script) for script in scripts]
+    )
+
+# Helper functions for AI chat
+def check_upl_risk(message: str) -> tuple[bool, Optional[str]]:
+    """Check if message contains UPL risk indicators"""
+    upl_patterns = [
+        r"should i hire",
+        r"what should i do in my case",
+        r"i was arrested",
+        r"i'm being sued",
+        r"my specific situation",
+        r"file a lawsuit",
+        r"represent me",
+        r"legal advice for my case"
+    ]
+    
+    message_lower = message.lower()
+    for pattern in upl_patterns:
+        if re.search(pattern, message_lower):
+            return True, ("⚠️ IMPORTANT DISCLAIMER: This app provides general legal information only, "
+                         "not personalized legal advice. For specific legal matters, please consult "
+                         "with a qualified attorney in your jurisdiction.")
+    
+    return False, None
+
+def detect_script_request(message: str) -> Optional[str]:
+    """Detect if user is asking for scripts"""
+    script_patterns = {
+        "traffic_stop": ["traffic stop", "pulled over", "police stop", "driving"],
+        "ice_encounter": ["ice", "immigration", "border patrol", "deportation"],
+        "police_search": ["search", "police search", "consent to search"],
+        "housing_dispute": ["landlord", "rent", "eviction", "housing"],
+        "workplace_rights": ["work", "job", "employment", "boss", "fired"]
+    }
+    
+    message_lower = message.lower()
+    for category, keywords in script_patterns.items():
+        for keyword in keywords:
+            if keyword in message_lower:
+                return category
+    
+    return None
+
+async def get_relevant_scripts(category: str, state: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Get relevant script templates"""
+    query = {"category": category}
+    if state:
+        query["$or"] = [
+            {"state_specific": False},
+            {"applicable_states": {"$in": [state]}}
+        ]
+    
+    scripts = await db.script_templates.find(query).limit(3).to_list(3)
+    return [
+        {
+            "title": script["title"],
+            "scenario": script["scenario"],
+            "script": script["script_text"],
+            "legal_basis": script["legal_basis"]
+        }
+        for script in scripts
+    ]
+
+def is_state_dependent_query(message: str) -> bool:
+    """Check if query is state-dependent"""
+    state_patterns = [
+        "law", "legal", "statute", "regulation", "permit", "license",
+        "rights", "court", "police", "arrest", "traffic", "housing"
+    ]
+    
+    message_lower = message.lower()
+    return any(pattern in message_lower for pattern in state_patterns)
+
+async def prepare_ai_context(user_id: str, user_state: Optional[str], session_id: str) -> Dict[str, Any]:
+    """Prepare context for AI"""
+    context = {
+        "user_state": user_state,
+        "system_role": "legal_education_assistant"
+    }
+    
+    # Get recent chat history for context
+    recent_messages = await db.chat_messages.find(
+        {"session_id": session_id}
+    ).sort("created_at", -1).limit(5).to_list(5)
+    
+    context["recent_history"] = [
+        {"message": msg["message"], "response": msg["response"]}
+        for msg in reversed(recent_messages)
+    ]
+    
+    return context
+
+async def generate_ai_response(message: str, context: Dict[str, Any], user_state: Optional[str], upl_risk: bool) -> Dict[str, Any]:
+    """Generate AI response using OpenAI"""
+    try:
+        system_prompt = create_system_prompt(user_state, upl_risk)
+        
+        # Prepare messages for OpenAI
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add recent context
+        for hist in context.get("recent_history", []):
+            messages.append({"role": "user", "content": hist["message"]})
+            messages.append({"role": "assistant", "content": hist["response"]})
+        
+        messages.append({"role": "user", "content": message})
+        
+        # Call OpenAI
+        response = await openai_integration.achat_completion(
+            model="gpt-4o",
+            messages=messages,
+            max_tokens=500,
+            temperature=0.7
+        )
+        
+        ai_response = response.choices[0].message.content
+        
+        return {
+            "response": ai_response,
+            "confidence_score": 0.8,
+            "suggested_statutes": []  # Could implement statute suggestion logic
+        }
+        
+    except Exception as e:
+        logging.error(f"OpenAI API error: {str(e)}")
+        # Fallback response
+        return {
+            "response": ("I apologize, but I'm experiencing technical difficulties. "
+                        "Please try again in a moment. If you need immediate assistance, "
+                        "please consult with a qualified attorney."),
+            "confidence_score": 0.1,
+            "suggested_statutes": []
+        }
+
+def create_system_prompt(user_state: Optional[str], upl_risk: bool) -> str:
+    """Create system prompt for AI"""
+    base_prompt = """You are RightNow, an AI legal education assistant focused on helping college students and the general public understand their legal rights. 
+
+IMPORTANT GUIDELINES:
+1. Always provide educational information, never specific legal advice
+2. Encourage users to consult qualified attorneys for personal legal matters
+3. Focus on general legal concepts, rights, and procedures
+4. Use clear, accessible language appropriate for students
+5. When discussing state-specific laws, mention that laws vary by jurisdiction"""
+    
+    if upl_risk:
+        base_prompt += "\n\nIMPORTANT: The user's question appears to seek personal legal advice. Provide general educational information only and remind them to consult an attorney."
+    
+    if user_state:
+        base_prompt += f"\n\nThe user is located in {user_state}. When relevant, mention that your information is general and they should verify current {user_state} laws."
+    else:
+        base_prompt += "\n\nThe user hasn't specified their state. When discussing state-specific topics, ask for their location to provide more relevant information."
+    
+    base_prompt += """
+
+RESPONSE STYLE:
+- Be encouraging and supportive
+- Use emojis occasionally to maintain engagement
+- Keep responses concise but informative
+- Suggest related learning resources when appropriate
+- Always end with a disclaimer about consulting attorneys for specific cases"""
+    
+    return base_prompt
+
+# Legacy AI Query endpoint (for backward compatibility)
 @api_router.post("/ai/query", response_model=APIResponse)
 async def create_ai_query(query_data: AIQueryCreate, current_user: User = Depends(get_current_user)):
-    # For now, create a placeholder response
-    # TODO: Integrate with AI service (OpenAI, Claude, etc.)
-    query = AIQuery(
-        **query_data.dict(),
-        user_id=current_user.id,
-        response="This is a placeholder response. AI integration will be implemented.",
-        confidence_score=0.8
+    # Redirect to new chat endpoint
+    chat_request = ChatRequest(
+        message=query_data.query_text,
+        session_id=None,
+        user_state=query_data.context.get("user_state")
     )
-    await db.ai_queries.insert_one(query.dict())
-    return APIResponse(success=True, message="AI query processed", data=query.dict())
+    return await chat_with_ai(chat_request, current_user)
 
 # User gamification endpoints
 @api_router.get("/user/progress", response_model=APIResponse)
