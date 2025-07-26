@@ -177,7 +177,7 @@ function App() {
             } />
             <Route path="/simulations" element={
               <ProtectedRoute>
-                <SimulationsPage />
+                <SimulationPlayer />
               </ProtectedRoute>
             } />
             <Route path="/learning" element={
