@@ -98,7 +98,7 @@ const Dashboard = () => {
       gradient: 'from-yellow-400 to-orange-500',
       bgGradient: 'from-yellow-50 to-orange-100',
       textColor: 'text-orange-700',
-      available: false
+      available: true
     },
     {
       title: 'Learning Paths',
