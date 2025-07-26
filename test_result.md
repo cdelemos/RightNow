@@ -338,13 +338,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Authentication Context and State Management"
-    - "Login Component"
-    - "Registration Component"
-    - "Dashboard Component"
-    - "Navigation Bar"
-    - "App Routing and Protected Routes"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
