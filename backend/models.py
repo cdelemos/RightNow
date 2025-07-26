@@ -232,6 +232,21 @@ class SimulationChoice(BaseModel):
     immediate_consequence: str = ""
     xp_value: int = 0
 
+# Voting Models
+class QuestionVote(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    question_id: str
+    vote_type: str  # "upvote" or "downvote"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AnswerVote(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    answer_id: str
+    vote_type: str  # "upvote" or "downvote"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 # Learning Path Models
 class LearningPath(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
