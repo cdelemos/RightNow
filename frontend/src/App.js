@@ -10,6 +10,7 @@ import StatuteLookup from "./components/Statutes/StatuteLookup";
 import AIChat from "./components/AI/AIChat";
 import MythFeed from "./components/Myths/MythFeed";
 import SimulationPlayer from "./components/Simulations/SimulationPlayer";
+import CommunityQA from "./components/Community/CommunityQA";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
