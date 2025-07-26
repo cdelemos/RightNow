@@ -255,6 +255,18 @@ backend:
         agent: "testing"
         comment: "SCENARIO-BASED LEGAL SIMULATIONS TESTING COMPLETED - ALL CORE FEATURES FULLY OPERATIONAL. Comprehensive testing completed with 94.4% success rate (101/107 tests passed). All major simulation features are working excellently: (1) Enhanced simulation endpoints - GET /api/simulations returns available simulations with user progress data, POST /api/simulations/{scenario_id}/start creates new simulation sessions, POST /api/simulations/progress/{progress_id}/choice processes choices and advances through nodes, GET /api/simulations/progress/{progress_id} retrieves current progress, GET /api/simulations/user/history provides completed simulation history. (2) Database initialization successful - 3 comprehensive interactive scenarios properly initialized: Traffic Stop (Level 2), ICE Encounter (Level 3), Housing Dispute (Level 2) with complex JSON structure including multiple nodes, branching choices, educational outcomes, XP rewards, and legal explanations. (3) Interactive simulation logic working perfectly - Start simulation creates progress records with start nodes, choice making advances through scenario trees with proper state management, score calculation and XP awards based on choice quality, completion detection and final outcome generation, legal explanations and educational feedback at key decision points. (4) Enhanced models operational - SimulationNode, SimulationScenario, SimulationProgress, SimulationChoice models working correctly, complex branching scenario trees with decision points, user progress tracking with path taken and scores, XP integration with existing gamification system. (5) User progress integration seamless - Tracks user attempts and completion status, integrates with existing XP/gamification system, session management for active simulations, history tracking for completed simulations. Authentication requirements properly enforced for all endpoints. Minor issues: 6 failed tests related to legacy endpoints (not new simulation system), myth system counters (unrelated), and test logic for completion detection. The interactive simulation system provides engaging educational experiences with proper legal guidance and exceeds all specified requirements."
 
+  - task: "Community Q&A System"
+    implemented: false
+    working: false
+    file: "server.py, components/Community/CommunityQA.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Starting implementation of Community Q&A System with peer-to-peer discussions, expert moderation, voting system, and gamified engagement. Will include question posting, answer submission, voting, search, and moderation features."
+
 frontend:
   - task: "Authentication Context and State Management"
     implemented: true
