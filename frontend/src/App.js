@@ -43,98 +43,170 @@ const PublicRoute = ({ children }) => {
   return !isAuthenticated ? children : <Navigate to="/dashboard" />;
 };
 
-// Placeholder components for other routes
+// Placeholder components for other routes with sage green theme
 const StatuteLookup = () => (
-  <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50 p-8">
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">📚 Statute Lookup</h1>
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-6xl mb-4">🚧</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon</h2>
-        <p className="text-gray-600">
-          The Real-Time Statute Lookup Engine is being built. This will allow you to search 
-          legal statutes by state and category with instant results.
+      <h1 className="text-4xl font-bold text-sage-800 mb-8 flex items-center">
+        <span className="animate-float inline-block mr-4">📚</span>
+        Statute Lookup
+      </h1>
+      <div className="bg-white rounded-3xl shadow-sage-lg p-12 text-center border border-sage-100">
+        <div className="text-8xl mb-6 animate-bounce-soft">🚧</div>
+        <h2 className="text-3xl font-bold text-sage-800 mb-4">Coming Soon!</h2>
+        <p className="text-sage-600 text-lg max-w-2xl mx-auto leading-relaxed">
+          The Real-Time Statute Lookup Engine is being crafted with care. Soon you'll be able to search 
+          legal statutes by state and category with lightning-fast results! ⚡
         </p>
+        <div className="mt-8 bg-sage-50 rounded-2xl p-6">
+          <div className="text-sage-700 font-medium mb-2">🎯 What's Coming:</div>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-sage-600">
+            <div>• State-by-state legal database</div>
+            <div>• Advanced search filters</div>
+            <div>• Category organization</div>
+            <div>• Instant results</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 );
 
 const QuestionsPage = () => (
-  <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50 p-8">
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">💬 Q&A Community</h1>
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-6xl mb-4">🚧</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon</h2>
-        <p className="text-gray-600">
-          The Community Q&A System is being built. Ask legal questions and get answers 
-          from peers and experts.
+      <h1 className="text-4xl font-bold text-sage-800 mb-8 flex items-center">
+        <span className="animate-float inline-block mr-4">💬</span>
+        Q&A Community
+      </h1>
+      <div className="bg-white rounded-3xl shadow-sage-lg p-12 text-center border border-sage-100">
+        <div className="text-8xl mb-6 animate-bounce-soft">🚧</div>
+        <h2 className="text-3xl font-bold text-sage-800 mb-4">Building Our Community!</h2>
+        <p className="text-sage-600 text-lg max-w-2xl mx-auto leading-relaxed">
+          The Community Q&A System is in development. Connect with fellow legal learners, 
+          ask questions, and get expert answers! 🤝
         </p>
+        <div className="mt-8 bg-sage-50 rounded-2xl p-6">
+          <div className="text-sage-700 font-medium mb-2">🎯 What's Coming:</div>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-sage-600">
+            <div>• Peer-to-peer discussions</div>
+            <div>• Expert moderation</div>
+            <div>• Voting system</div>
+            <div>• Achievement rewards</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 );
 
 const MythsPage = () => (
-  <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50 p-8">
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">🎯 Legal Myths</h1>
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-6xl mb-4">🚧</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon</h2>
-        <p className="text-gray-600">
-          The Myth-Busting Legal Feed is being built. Discover the truth behind 
-          common legal misconceptions.
+      <h1 className="text-4xl font-bold text-sage-800 mb-8 flex items-center">
+        <span className="animate-float inline-block mr-4">🎯</span>
+        Legal Myths
+      </h1>
+      <div className="bg-white rounded-3xl shadow-sage-lg p-12 text-center border border-sage-100">
+        <div className="text-8xl mb-6 animate-bounce-soft">🚧</div>
+        <h2 className="text-3xl font-bold text-sage-800 mb-4">Myth-Busting Magic!</h2>
+        <p className="text-sage-600 text-lg max-w-2xl mx-auto leading-relaxed">
+          The Myth-Busting Legal Feed is being designed to shatter misconceptions 
+          with facts and fun! Swipe through legal truths daily! 📱✨
         </p>
+        <div className="mt-8 bg-sage-50 rounded-2xl p-6">
+          <div className="text-sage-700 font-medium mb-2">🎯 What's Coming:</div>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-sage-600">
+            <div>• Daily myth-busting content</div>
+            <div>• Swipeable interface</div>
+            <div>• Expert fact-checking</div>
+            <div>• Social sharing features</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 );
 
 const SimulationsPage = () => (
-  <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50 p-8">
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">🎮 Legal Simulations</h1>
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-6xl mb-4">🚧</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon</h2>
-        <p className="text-gray-600">
-          Scenario-Based Legal Simulations are being built. Practice legal scenarios 
-          like police stops and housing disputes in a safe environment.
+      <h1 className="text-4xl font-bold text-sage-800 mb-8 flex items-center">
+        <span className="animate-float inline-block mr-4">🎮</span>
+        Legal Simulations
+      </h1>
+      <div className="bg-white rounded-3xl shadow-sage-lg p-12 text-center border border-sage-100">
+        <div className="text-8xl mb-6 animate-bounce-soft">🚧</div>
+        <h2 className="text-3xl font-bold text-sage-800 mb-4">Game-Changing Learning!</h2>
+        <p className="text-sage-600 text-lg max-w-2xl mx-auto leading-relaxed">
+          Scenario-Based Legal Simulations are in the works! Practice real-world situations 
+          like police encounters and housing disputes in a safe, gamified environment! 🛡️
         </p>
+        <div className="mt-8 bg-sage-50 rounded-2xl p-6">
+          <div className="text-sage-700 font-medium mb-2">🎯 What's Coming:</div>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-sage-600">
+            <div>• Interactive scenarios</div>
+            <div>• Branching storylines</div>
+            <div>• Safe practice environment</div>
+            <div>• Performance feedback</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 );
 
 const LearningPage = () => (
-  <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50 p-8">
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">🎓 Learning Paths</h1>
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-6xl mb-4">🚧</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon</h2>
-        <p className="text-gray-600">
-          Advanced Learning Paths are being built. Get personalized curriculum 
-          based on your student type and learning goals.
+      <h1 className="text-4xl font-bold text-sage-800 mb-8 flex items-center">
+        <span className="animate-float inline-block mr-4">🎓</span>
+        Learning Paths
+      </h1>
+      <div className="bg-white rounded-3xl shadow-sage-lg p-12 text-center border border-sage-100">
+        <div className="text-8xl mb-6 animate-bounce-soft">🚧</div>
+        <h2 className="text-3xl font-bold text-sage-800 mb-4">Personalized Journeys!</h2>
+        <p className="text-sage-600 text-lg max-w-2xl mx-auto leading-relaxed">
+          Advanced Learning Paths are being tailored just for you! Get personalized curriculum 
+          based on your student type and learning goals! 🎯📈
         </p>
+        <div className="mt-8 bg-sage-50 rounded-2xl p-6">
+          <div className="text-sage-700 font-medium mb-2">🎯 What's Coming:</div>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-sage-600">
+            <div>• Personalized curriculum</div>
+            <div>• Adaptive learning</div>
+            <div>• Progress tracking</div>
+            <div>• Achievement system</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 );
 
 const AIChatPage = () => (
-  <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50 p-8">
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">🤖 AI Legal Assistant</h1>
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-6xl mb-4">🚧</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon</h2>
-        <p className="text-gray-600">
-          The AI-Powered Legal Query Assistant is being built. Get instant answers 
-          to your legal questions with AI assistance.
+      <h1 className="text-4xl font-bold text-sage-800 mb-8 flex items-center">
+        <span className="animate-float inline-block mr-4">🤖</span>
+        AI Legal Assistant
+      </h1>
+      <div className="bg-white rounded-3xl shadow-sage-lg p-12 text-center border border-sage-100">
+        <div className="text-8xl mb-6 animate-bounce-soft">🚧</div>
+        <h2 className="text-3xl font-bold text-sage-800 mb-4">AI-Powered Guidance!</h2>
+        <p className="text-sage-600 text-lg max-w-2xl mx-auto leading-relaxed">
+          The AI-Powered Legal Query Assistant is being trained by legal experts! 
+          Get instant, intelligent answers to your legal questions! 🧠⚡
         </p>
+        <div className="mt-8 bg-sage-50 rounded-2xl p-6">
+          <div className="text-sage-700 font-medium mb-2">🎯 What's Coming:</div>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-sage-600">
+            <div>• Instant AI responses</div>
+            <div>• Context-aware answers</div>
+            <div>• Statute recommendations</div>
+            <div>• Voice interaction</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
