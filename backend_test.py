@@ -121,10 +121,17 @@ class BackendTester:
     
     def test_user_login(self):
         """Test user login and JWT token generation"""
-        login_data = {
-            "email": "sarah.johnson@university.edu",
-            "password": "SecurePass123!"
-        }
+        if not hasattr(self, 'test_user_email'):
+            # Fallback to existing user if registration didn't work
+            login_data = {
+                "email": "sarah.johnson@university.edu",
+                "password": "SecurePass123!"
+            }
+        else:
+            login_data = {
+                "email": self.test_user_email,
+                "password": self.test_user_password
+            }
         
         success, data, status_code = self.make_request("POST", "/auth/login", login_data)
         
