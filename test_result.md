@@ -366,7 +366,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "AI-Powered Legal Query Assistant"
+    - "Myth-Busting Legal Feed"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
