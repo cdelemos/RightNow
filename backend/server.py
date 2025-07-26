@@ -888,15 +888,18 @@ async def generate_ai_response(message: str, context: Dict[str, Any], user_state
         
         messages.append({"role": "user", "content": message})
         
-        # Call OpenAI
-        response = await openai_integration.achat_completion(
-            model="gpt-4o",
-            messages=messages,
-            max_tokens=500,
-            temperature=0.7
+        # Create LlmChat instance
+        from emergentintegrations.llm.openai import UserMessage
+        chat = LlmChat(
+            api_key=openai_api_key,
+            session_id=str(uuid.uuid4()),
+            system_message=system_prompt,
+            initial_messages=messages[:-1]  # All messages except the last user message
         )
         
-        ai_response = response.choices[0].message.content
+        # Send the user message
+        user_msg = UserMessage(text=message)
+        ai_response = await chat.send_message(user_msg)
         
         return {
             "response": ai_response,
