@@ -225,6 +225,18 @@ backend:
         agent: "testing"
         comment: "AI query placeholder endpoint is working correctly. Accepts query data with context, processes requests, and returns placeholder responses. Authentication is properly implemented. Ready for actual AI service integration when needed."
 
+  - task: "Myth-Busting Legal Feed"
+    implemented: false
+    working: false
+    file: "server.py, components/Myths/MythFeed.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Starting implementation of Myth-Busting Legal Feed with swipeable interface for daily legal myth-busting content. Will include myth vs fact cards, social sharing, progress tracking, and gamification rewards."
+
 frontend:
   - task: "Authentication Context and State Management"
     implemented: true
