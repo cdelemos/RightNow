@@ -1652,8 +1652,337 @@ async def initialize_legal_myths():
         myth = LegalMyth(**myth_data, created_by=current_user_id)
         legal_myths.append(myth)
     
-    await db.legal_myths.insert_many([myth.dict() for myth in legal_myths])
-    logging.info(f"Initialized {len(legal_myths)} legal myths")
+async def initialize_legal_simulations():
+    """Initialize the database with interactive legal simulation scenarios"""
+    # Check if simulations already exist
+    existing_count = await db.simulation_scenarios.count_documents({})
+    if existing_count > 0:
+        return  # Simulations already initialized
+    
+    simulation_scenarios = [
+        # Traffic Stop Simulation
+        {
+            "title": "Traffic Stop: Know Your Rights",
+            "description": "You're driving home when you see flashing lights behind you. How you handle this traffic stop can make all the difference. Practice your rights!",
+            "category": "traffic_stop",
+            "difficulty_level": 2,
+            "estimated_duration": 5,
+            "learning_objectives": [
+                "Understand your rights during a traffic stop",
+                "Learn when you can refuse searches",
+                "Practice de-escalation techniques",
+                "Know what information you must provide"
+            ],
+            "legal_context": "Traffic stops are governed by the 4th Amendment protection against unreasonable searches and state traffic laws.",
+            "applicable_laws": ["4th Amendment", "State Traffic Codes", "Terry v. Ohio"],
+            "start_node_id": "traffic_start",
+            "scenario_nodes": [
+                {
+                    "id": "traffic_start",
+                    "title": "Pulled Over",
+                    "description": "You see police lights in your rearview mirror. The officer is approaching your vehicle. What's your first action?",
+                    "choices": [
+                        {
+                            "choice_text": "Keep your hands on the steering wheel and wait for the officer",
+                            "next_node_id": "traffic_compliant",
+                            "is_optimal": True,
+                            "feedback": "✅ Excellent! Keeping your hands visible shows you're not a threat and follows best practices.",
+                            "immediate_consequence": "The officer approaches calmly, appreciating your cooperation.",
+                            "xp_value": 15
+                        },
+                        {
+                            "choice_text": "Get out of the car to meet the officer",
+                            "next_node_id": "traffic_mistake",
+                            "is_optimal": False,
+                            "feedback": "❌ This could be seen as threatening. Stay in your vehicle unless instructed otherwise.",
+                            "immediate_consequence": "The officer orders you back into your vehicle and seems more alert.",
+                            "xp_value": 5
+                        },
+                        {
+                            "choice_text": "Start looking through your glove compartment for documents",
+                            "next_node_id": "traffic_searching",
+                            "is_optimal": False,
+                            "feedback": "⚠️ Wait for instructions before reaching for anything - officer safety is important.",
+                            "immediate_consequence": "The officer asks you to stop moving and keep your hands visible.",
+                            "xp_value": 8
+                        }
+                    ]
+                },
+                {
+                    "id": "traffic_compliant",
+                    "title": "Documents Requested",
+                    "description": "The officer asks for your driver's license, registration, and insurance. You provide them. Now the officer asks: 'Do you know why I stopped you?'",
+                    "choices": [
+                        {
+                            "choice_text": "Admit to speeding: 'Yes, I was going a bit fast'",
+                            "next_node_id": "traffic_admission",
+                            "is_optimal": False,
+                            "feedback": "❌ Never admit guilt! This admission can be used against you in court.",
+                            "immediate_consequence": "The officer notes your admission and continues the investigation.",
+                            "xp_value": 5
+                        },
+                        {
+                            "choice_text": "Exercise your right to remain silent: 'I prefer to remain silent'",
+                            "next_node_id": "traffic_silent",
+                            "is_optimal": True,
+                            "feedback": "✅ Perfect! You have the right to remain silent and shouldn't incriminate yourself.",
+                            "immediate_consequence": "The officer respects your right and continues with the traffic stop.",
+                            "xp_value": 20
+                        },
+                        {
+                            "choice_text": "Ask a question: 'What did I do wrong, officer?'",
+                            "next_node_id": "traffic_question",
+                            "is_optimal": True,
+                            "feedback": "✅ Good! You're not admitting guilt but engaging respectfully.",
+                            "immediate_consequence": "The officer explains they clocked you going 10 mph over the limit.",
+                            "xp_value": 15
+                        }
+                    ]
+                },
+                {
+                    "id": "traffic_silent",
+                    "title": "Search Request",
+                    "description": "The officer asks: 'Mind if I search your vehicle?' How do you respond?",
+                    "choices": [
+                        {
+                            "choice_text": "Consent to the search: 'Sure, go ahead'",
+                            "next_node_id": "traffic_consent",
+                            "is_optimal": False,
+                            "feedback": "❌ You just waived your 4th Amendment rights! Never consent unless they have a warrant.",
+                            "immediate_consequence": "The officer searches your car, which could lead to additional complications.",
+                            "xp_value": 5
+                        },
+                        {
+                            "choice_text": "Refuse politely: 'I do not consent to searches'",
+                            "next_node_id": "traffic_refuse",
+                            "is_optimal": True,
+                            "feedback": "✅ Excellent! You're exercising your 4th Amendment right against unreasonable searches.",
+                            "immediate_consequence": "The officer respects your rights and cannot search without probable cause.",
+                            "xp_value": 25
+                        }
+                    ]
+                },
+                {
+                    "id": "traffic_refuse",
+                    "title": "Traffic Stop Conclusion",
+                    "description": "The officer respects your refusal and writes you a ticket for speeding. The stop concludes professionally.",
+                    "is_end_node": True,
+                    "legal_explanation": "You successfully exercised your constitutional rights during this traffic stop. Key takeaways: 1) Keep hands visible, 2) Provide required documents, 3) Exercise your right to remain silent, 4) Never consent to searches without a warrant. You can fight the ticket in court if you believe it was unjustified.",
+                    "outcome_type": "positive",
+                    "xp_reward": 30
+                }
+            ]
+        },
+        
+        # ICE Encounter Simulation
+        {
+            "title": "ICE Encounter: Constitutional Rights",
+            "description": "ICE agents appear at your door. Regardless of your immigration status, you have constitutional rights. Learn how to protect yourself and your family.",
+            "category": "police_encounter",
+            "difficulty_level": 3,
+            "estimated_duration": 7,
+            "learning_objectives": [
+                "Understand your rights regardless of immigration status",
+                "Learn about warrant requirements",
+                "Practice asserting your rights respectfully",
+                "Know when to remain silent"
+            ],
+            "legal_context": "Constitutional rights apply to all persons on US soil, regardless of immigration status. 4th Amendment protections require warrants for searches.",
+            "applicable_laws": ["4th Amendment", "5th Amendment", "Immigration Laws"],
+            "start_node_id": "ice_start",
+            "scenario_nodes": [
+                {
+                    "id": "ice_start",
+                    "title": "Knock at the Door",
+                    "description": "Someone knocks loudly at your door early in the morning. Through the window, you see people in what appear to be official uniforms. What do you do?",
+                    "choices": [
+                        {
+                            "choice_text": "Open the door immediately",
+                            "next_node_id": "ice_opened",
+                            "is_optimal": False,
+                            "feedback": "❌ Never open the door without knowing who it is and seeing a warrant!",
+                            "immediate_consequence": "Agents push into your home without showing a warrant.",
+                            "xp_value": 5
+                        },
+                        {
+                            "choice_text": "Ask 'Who is it?' through the closed door",
+                            "next_node_id": "ice_identify",
+                            "is_optimal": True,
+                            "feedback": "✅ Good! Always identify who is at your door before opening it.",
+                            "immediate_consequence": "The agents identify themselves as ICE officers.",
+                            "xp_value": 15
+                        },
+                        {
+                            "choice_text": "Stay silent and hope they go away",
+                            "next_node_id": "ice_silent",
+                            "is_optimal": False,
+                            "feedback": "⚠️ While you have rights, it's better to assert them clearly.",
+                            "immediate_consequence": "The knocking continues and gets more persistent.",
+                            "xp_value": 10
+                        }
+                    ]
+                },
+                {
+                    "id": "ice_identify",
+                    "title": "ICE at Your Door",
+                    "description": "The agents say they're ICE officers and want to come in to ask questions. They don't mention having a warrant. What's your response?",
+                    "choices": [
+                        {
+                            "choice_text": "Ask to see a warrant signed by a judge",
+                            "next_node_id": "ice_warrant_request",
+                            "is_optimal": True,
+                            "feedback": "✅ Perfect! ICE needs a judicial warrant to enter your home without consent.",
+                            "immediate_consequence": "You assert your 4th Amendment rights properly.",
+                            "xp_value": 25
+                        },
+                        {
+                            "choice_text": "Let them in to cooperate",
+                            "next_node_id": "ice_cooperate",
+                            "is_optimal": False,
+                            "feedback": "❌ You just consented to a search! Never let them in without a warrant.",
+                            "immediate_consequence": "ICE enters your home and begins questioning everyone present.",
+                            "xp_value": 5
+                        }
+                    ]
+                },
+                {
+                    "id": "ice_warrant_request",
+                    "title": "No Warrant Shown",
+                    "description": "The agents cannot produce a judicial warrant. They insist they need to speak with someone inside. How do you respond?",
+                    "choices": [
+                        {
+                            "choice_text": "State clearly: 'I do not consent to your entry. I am exercising my right to remain silent.'",
+                            "next_node_id": "ice_rights_asserted",
+                            "is_optimal": True,
+                            "feedback": "✅ Excellent! You're asserting your constitutional rights clearly and respectfully.",
+                            "immediate_consequence": "You've properly invoked your 4th and 5th Amendment rights.",
+                            "xp_value": 30
+                        },
+                        {
+                            "choice_text": "Argue with them about immigration law",
+                            "next_node_id": "ice_argue",
+                            "is_optimal": False,
+                            "feedback": "❌ Don't engage in arguments. Simply assert your rights and remain silent.",
+                            "immediate_consequence": "The conversation becomes heated and complicated.",
+                            "xp_value": 10
+                        }
+                    ]
+                },
+                {
+                    "id": "ice_rights_asserted",
+                    "title": "Rights Successfully Asserted",
+                    "description": "Without a warrant, the agents cannot legally enter your home. They eventually leave, unable to violate your constitutional rights.",
+                    "is_end_node": True,
+                    "legal_explanation": "You successfully protected your constitutional rights! Key points: 1) ICE needs a judicial warrant (not an administrative warrant) to enter your home, 2) You have the right to remain silent regardless of immigration status, 3) You have the right to refuse entry without a warrant, 4) Constitutional rights apply to everyone on US soil. Always remember: stay calm, assert your rights clearly, and contact an attorney if needed.",
+                    "outcome_type": "positive",
+                    "xp_reward": 40
+                }
+            ]
+        },
+        
+        # Housing Dispute Simulation
+        {
+            "title": "Landlord Dispute: Tenant Rights",
+            "description": "Your landlord is trying to evict you without proper notice. Learn your rights as a tenant and how to protect yourself from illegal eviction practices.",
+            "category": "housing_dispute",
+            "difficulty_level": 2,
+            "estimated_duration": 6,
+            "learning_objectives": [
+                "Understand proper eviction procedures",
+                "Learn about tenant rights and protections",
+                "Know when to seek legal help",
+                "Understand documentation requirements"
+            ],
+            "legal_context": "Tenant-landlord law varies by state but generally requires proper notice, just cause, and court orders for evictions.",
+            "applicable_laws": ["State Tenant-Landlord Laws", "Fair Housing Act", "Local Housing Codes"],
+            "start_node_id": "housing_start",
+            "scenario_nodes": [
+                {
+                    "id": "housing_start",
+                    "title": "Surprise Eviction Notice",
+                    "description": "You come home to find a handwritten note on your door from your landlord saying 'You have 3 days to get out or I'm changing the locks.' What's your first step?",
+                    "choices": [
+                        {
+                            "choice_text": "Pack up and leave immediately to avoid conflict",
+                            "next_node_id": "housing_leave",
+                            "is_optimal": False,
+                            "feedback": "❌ Don't let illegal tactics scare you! You have rights that protect you from improper eviction.",
+                            "immediate_consequence": "You lose your home and rights unnecessarily.",
+                            "xp_value": 5
+                        },
+                        {
+                            "choice_text": "Document the notice and research tenant rights",
+                            "next_node_id": "housing_document",
+                            "is_optimal": True,
+                            "feedback": "✅ Smart! Documentation is crucial and knowing your rights is the first step.",
+                            "immediate_consequence": "You have evidence and start building your case.",
+                            "xp_value": 20
+                        },
+                        {
+                            "choice_text": "Confront the landlord angrily",
+                            "next_node_id": "housing_confront",
+                            "is_optimal": False,
+                            "feedback": "⚠️ Emotions are understandable, but stay calm and focus on legal remedies.",
+                            "immediate_consequence": "The situation escalates and becomes more hostile.",
+                            "xp_value": 8
+                        }
+                    ]
+                },
+                {
+                    "id": "housing_document",
+                    "title": "Research Phase",
+                    "description": "You discover that your state requires 30 days written notice for eviction and landlords cannot change locks without a court order. Your landlord's notice is clearly illegal. What's next?",
+                    "choices": [
+                        {
+                            "choice_text": "Contact a tenant rights organization or legal aid",
+                            "next_node_id": "housing_legal_help",
+                            "is_optimal": True,
+                            "feedback": "✅ Excellent! Getting legal help early can prevent bigger problems.",
+                            "immediate_consequence": "You connect with advocates who know tenant law.",
+                            "xp_value": 25
+                        },
+                        {
+                            "choice_text": "Send a certified letter to your landlord explaining their violation",
+                            "next_node_id": "housing_letter",
+                            "is_optimal": True,
+                            "feedback": "✅ Good approach! Documenting your knowledge of the law can deter illegal actions.",
+                            "immediate_consequence": "You create a paper trail and assert your rights formally.",
+                            "xp_value": 20
+                        }
+                    ]
+                },
+                {
+                    "id": "housing_legal_help",
+                    "title": "Legal Support Secured",
+                    "description": "The tenant rights attorney confirms your landlord's actions are illegal and helps you file a complaint. Your housing is protected and you may be entitled to damages.",
+                    "is_end_node": True,
+                    "legal_explanation": "You successfully protected your tenant rights! Key lessons: 1) Landlords must follow proper legal procedures for evictions, 2) Tenants have the right to proper notice (usually 30+ days), 3) Only courts can order evictions, not landlords, 4) Illegal eviction attempts can result in damages for tenants, 5) Documentation is crucial for protecting your rights. Always know your local tenant laws and don't hesitate to seek legal help.",
+                    "outcome_type": "positive",
+                    "xp_reward": 35
+                }
+            ]
+        }
+    ]
+    
+    # Create simulation scenarios
+    created_scenarios = []
+    for scenario_data in simulation_scenarios:
+        # Convert scenario nodes
+        scenario_nodes = []
+        for node_data in scenario_data["scenario_nodes"]:
+            node = SimulationNode(**node_data)
+            scenario_nodes.append(node)
+        
+        # Create scenario
+        scenario = SimulationScenario(
+            **{k: v for k, v in scenario_data.items() if k != "scenario_nodes"},
+            scenario_nodes=scenario_nodes,
+            created_by="system"
+        )
+        created_scenarios.append(scenario)
+    
+    await db.simulation_scenarios.insert_many([scenario.dict() for scenario in created_scenarios])
+    logging.info(f"Initialized {len(created_scenarios)} legal simulation scenarios")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
