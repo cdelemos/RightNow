@@ -88,7 +88,7 @@ const Dashboard = () => {
       gradient: 'from-red-400 to-red-600',
       bgGradient: 'from-red-50 to-red-100',
       textColor: 'text-red-700',
-      available: false
+      available: true
     },
     {
       title: 'Simulations',
