@@ -259,7 +259,11 @@ const Dashboard = () => {
                       </p>
                     </div>
                   </div>
-                  {!feature.available && (
+                  {feature.available ? (
+                    <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                      Available
+                    </div>
+                  ) : (
                     <div className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
                       Coming Soon
                     </div>
