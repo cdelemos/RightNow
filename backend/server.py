@@ -37,7 +37,7 @@ if not openai_api_key:
     logging.warning("OPENAI_API_KEY not found in environment variables")
     openai_integration = None
 else:
-    openai_integration = OpenAIIntegration(api_key=openai_api_key)
+    openai_integration = True  # We'll create LlmChat instances as needed
 
 # Create the main app
 app = FastAPI(title="RightNow Legal Education Platform", version="1.0.0")
