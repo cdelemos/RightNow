@@ -783,14 +783,16 @@ async def track_myth_view(user_id: str, myth_id: str):
             {"$set": {"read_at": datetime.utcnow()}}
         )
 
-# Simulation endpoints
+# Enhanced Simulation endpoints
 @api_router.get("/simulations", response_model=APIResponse)
 async def get_simulations(
     category: Optional[SimulationCategory] = None,
     difficulty: Optional[int] = None,
     page: int = 1,
-    per_page: int = 20
+    per_page: int = 20,
+    current_user: User = Depends(get_current_user)
 ):
+    """Get available simulations with user progress"""
     query = {"is_active": True}
     if category:
         query["category"] = category.value
@@ -801,17 +803,248 @@ async def get_simulations(
     skip = (page - 1) * per_page
     simulations = await db.simulation_scenarios.find(query).skip(skip).limit(per_page).to_list(per_page)
     
+    # Add user progress data
+    processed_simulations = []
+    for sim in simulations:
+        sim_obj = SimulationScenario(**sim)
+        sim_dict = sim_obj.dict()
+        
+        # Get user's progress for this simulation
+        user_progress = await db.simulation_progress.find_one({
+            "user_id": current_user.id,
+            "scenario_id": sim_obj.id
+        })
+        
+        sim_dict["user_completed"] = bool(user_progress and user_progress.get("completed", False))
+        sim_dict["user_best_score"] = user_progress.get("score", 0) if user_progress else 0
+        sim_dict["user_attempts"] = await db.simulation_progress.count_documents({
+            "user_id": current_user.id,
+            "scenario_id": sim_obj.id
+        })
+        
+        processed_simulations.append(sim_dict)
+    
     return APIResponse(
         success=True,
         message="Simulations retrieved successfully",
         data=PaginatedResponse(
-            items=[SimulationScenario(**sim) for sim in simulations],
+            items=processed_simulations,
             total=total,
             page=page,
             per_page=per_page,
             pages=math.ceil(total / per_page)
         ).dict()
     )
+
+@api_router.post("/simulations/{scenario_id}/start", response_model=APIResponse)
+async def start_simulation(scenario_id: str, current_user: User = Depends(get_current_user)):
+    """Start a new simulation session"""
+    scenario = await db.simulation_scenarios.find_one({"id": scenario_id, "is_active": True})
+    if not scenario:
+        raise HTTPException(status_code=404, detail="Simulation scenario not found")
+    
+    scenario_obj = SimulationScenario(**scenario)
+    
+    # Create new progress record
+    progress = SimulationProgress(
+        user_id=current_user.id,
+        scenario_id=scenario_id,
+        current_node_id=scenario_obj.start_node_id,
+        max_possible_score=calculate_max_score(scenario_obj)
+    )
+    
+    await db.simulation_progress.insert_one(progress.dict())
+    
+    # Get the starting node
+    start_node = next((node for node in scenario_obj.scenario_nodes if node.id == scenario_obj.start_node_id), None)
+    if not start_node:
+        raise HTTPException(status_code=500, detail="Invalid scenario configuration")
+    
+    return APIResponse(
+        success=True,
+        message="Simulation started successfully",
+        data={
+            "progress_id": progress.id,
+            "scenario": scenario_obj.dict(),
+            "current_node": start_node.dict()
+        }
+    )
+
+@api_router.post("/simulations/progress/{progress_id}/choice", response_model=APIResponse)
+async def make_simulation_choice(
+    progress_id: str, 
+    choice_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Make a choice in the simulation and advance to next node"""
+    progress = await db.simulation_progress.find_one({
+        "id": progress_id,
+        "user_id": current_user.id,
+        "completed": False
+    })
+    
+    if not progress:
+        raise HTTPException(status_code=404, detail="Simulation progress not found")
+    
+    scenario = await db.simulation_scenarios.find_one({"id": progress["scenario_id"]})
+    if not scenario:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    
+    scenario_obj = SimulationScenario(**scenario)
+    
+    # Get current node
+    current_node = next((node for node in scenario_obj.scenario_nodes if node.id == progress["current_node_id"]), None)
+    if not current_node:
+        raise HTTPException(status_code=500, detail="Invalid simulation state")
+    
+    # Validate choice
+    choice_index = choice_data.get("choice_index")
+    if choice_index is None or choice_index >= len(current_node.choices):
+        raise HTTPException(status_code=400, detail="Invalid choice")
+    
+    selected_choice = current_node.choices[choice_index]
+    next_node_id = selected_choice.get("next_node_id")
+    choice_score = selected_choice.get("xp_value", 0)
+    
+    # Update progress
+    new_path_entry = {
+        "node_id": current_node.id,
+        "choice_index": choice_index,
+        "choice_text": selected_choice["choice_text"],
+        "timestamp": datetime.utcnow().isoformat(),
+        "points_earned": choice_score
+    }
+    
+    updated_progress = {
+        "path_taken": progress["path_taken"] + [new_path_entry],
+        "score": progress["score"] + choice_score,
+        "total_xp_earned": progress["total_xp_earned"] + choice_score
+    }
+    
+    # Check if simulation is complete
+    if not next_node_id or next_node_id == "END":
+        # Simulation completed
+        completion_time = int((datetime.utcnow() - datetime.fromisoformat(progress["started_at"].replace('Z', '+00:00'))).total_seconds())
+        updated_progress.update({
+            "completed": True,
+            "completion_time": completion_time,
+            "completed_at": datetime.utcnow(),
+            "current_node_id": current_node.id  # Stay on final node
+        })
+        
+        # Award XP to user
+        await award_xp(current_user.id, updated_progress["total_xp_earned"], "complete_simulation")
+        
+        # Calculate final outcome
+        final_score_percentage = (updated_progress["score"] / progress["max_possible_score"]) * 100
+        outcome_message = get_simulation_outcome_message(final_score_percentage, scenario_obj)
+        
+        await db.simulation_progress.update_one(
+            {"id": progress_id},
+            {"$set": updated_progress}
+        )
+        
+        return APIResponse(
+            success=True,
+            message="Simulation completed successfully",
+            data={
+                "completed": True,
+                "final_score": updated_progress["score"],
+                "final_score_percentage": final_score_percentage,
+                "total_xp_earned": updated_progress["total_xp_earned"],
+                "completion_time": completion_time,
+                "outcome_message": outcome_message,
+                "choice_feedback": selected_choice.get("feedback", ""),
+                "legal_explanation": current_node.legal_explanation
+            }
+        )
+    
+    else:
+        # Continue simulation
+        next_node = next((node for node in scenario_obj.scenario_nodes if node.id == next_node_id), None)
+        if not next_node:
+            raise HTTPException(status_code=500, detail="Invalid next node")
+        
+        updated_progress["current_node_id"] = next_node_id
+        
+        await db.simulation_progress.update_one(
+            {"id": progress_id},
+            {"$set": updated_progress}
+        )
+        
+        return APIResponse(
+            success=True,
+            message="Choice recorded successfully",
+            data={
+                "completed": False,
+                "current_score": updated_progress["score"],
+                "current_node": next_node.dict(),
+                "choice_feedback": selected_choice.get("feedback", ""),
+                "immediate_consequence": selected_choice.get("immediate_consequence", ""),
+                "points_earned": choice_score
+            }
+        )
+
+@api_router.get("/simulations/progress/{progress_id}", response_model=APIResponse)
+async def get_simulation_progress(progress_id: str, current_user: User = Depends(get_current_user)):
+    """Get current simulation progress"""
+    progress = await db.simulation_progress.find_one({
+        "id": progress_id,
+        "user_id": current_user.id
+    })
+    
+    if not progress:
+        raise HTTPException(status_code=404, detail="Simulation progress not found")
+    
+    return APIResponse(
+        success=True,
+        message="Simulation progress retrieved successfully",
+        data=SimulationProgress(**progress).dict()
+    )
+
+@api_router.get("/simulations/user/history", response_model=APIResponse)
+async def get_user_simulation_history(current_user: User = Depends(get_current_user)):
+    """Get user's simulation history"""
+    history = await db.simulation_progress.find({
+        "user_id": current_user.id,
+        "completed": True
+    }).sort("completed_at", -1).limit(20).to_list(20)
+    
+    # Enrich with scenario information
+    enriched_history = []
+    for record in history:
+        scenario = await db.simulation_scenarios.find_one({"id": record["scenario_id"]})
+        if scenario:
+            record["scenario_title"] = scenario["title"]
+            record["scenario_category"] = scenario["category"]
+        enriched_history.append(record)
+    
+    return APIResponse(
+        success=True,
+        message="Simulation history retrieved successfully",
+        data=enriched_history
+    )
+
+# Helper functions for simulations
+def calculate_max_score(scenario: SimulationScenario) -> int:
+    """Calculate the maximum possible score for a scenario"""
+    total_score = 0
+    for node in scenario.scenario_nodes:
+        if node.choices:
+            max_choice_score = max(choice.get("xp_value", 0) for choice in node.choices)
+            total_score += max_choice_score
+    return total_score
+
+def get_simulation_outcome_message(score_percentage: float, scenario: SimulationScenario) -> str:
+    """Get outcome message based on performance"""
+    if score_percentage >= 90:
+        return f"🏆 Outstanding! You demonstrated excellent knowledge of your legal rights in this {scenario.category.replace('_', ' ')} scenario. You're well-prepared for real-world situations!"
+    elif score_percentage >= 75:
+        return f"👏 Great job! You showed good understanding of the legal principles in this {scenario.category.replace('_', ' ')} scenario. A few small improvements and you'll be fully prepared!"
+    elif score_percentage >= 60:
+        return f"📚 Good effort! You have a basic understanding of the {scenario.category.replace('_', ' ')} scenario, but there's room for improvement. Review the feedback and try again!"
+    else:
+        return f"🎯 Keep learning! This {scenario.category.replace('_', ' ')} scenario is challenging. Review the legal explanations and practice more to build your confidence!"
 
 # Learning Path endpoints
 @api_router.get("/learning-paths", response_model=APIResponse)
