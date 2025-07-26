@@ -75,10 +75,13 @@ class BackendTester:
     
     def test_user_registration(self):
         """Test user registration with different user types"""
+        import time
+        timestamp = str(int(time.time()))
+        
         test_users = [
             {
-                "email": "sarah.johnson@university.edu",
-                "username": "sarah_law_student",
+                "email": f"sarah.johnson.{timestamp}@university.edu",
+                "username": f"sarah_law_student_{timestamp}",
                 "password": "SecurePass123!",
                 "user_type": "law_student",
                 "profile": {
@@ -89,8 +92,8 @@ class BackendTester:
                 }
             },
             {
-                "email": "mike.chen@college.edu", 
-                "username": "mike_undergrad",
+                "email": f"mike.chen.{timestamp}@college.edu", 
+                "username": f"mike_undergrad_{timestamp}",
                 "password": "StudentLife456!",
                 "user_type": "undergraduate",
                 "profile": {
@@ -110,6 +113,8 @@ class BackendTester:
                              f"User {user_data['username']} registered successfully")
                 if i == 0:  # Save first user for login testing
                     self.test_user_id = data["data"]["user_id"]
+                    self.test_user_email = user_data["email"]
+                    self.test_user_password = user_data["password"]
             else:
                 self.log_test(f"User Registration ({user_data['user_type']})", False, 
                              "Registration failed", {"status_code": status_code, "response": data})
