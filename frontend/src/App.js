@@ -8,6 +8,7 @@ import Register from "./components/Auth/Register";
 import Dashboard from "./components/Dashboard/Dashboard";
 import StatuteLookup from "./components/Statutes/StatuteLookup";
 import AIChat from "./components/AI/AIChat";
+import MythFeed from "./components/Myths/MythFeed";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
