@@ -238,7 +238,7 @@ function App() {
             } />
             <Route path="/ai-chat" element={
               <ProtectedRoute>
-                <AIChatPage />
+                <AIChat />
               </ProtectedRoute>
             } />
             
