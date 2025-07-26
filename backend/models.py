@@ -63,6 +63,9 @@ class LegalStatute(BaseModel):
     effective_date: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    # New fields for enhanced statute information
+    practical_impact: Optional[str] = ""
+    student_relevance: Optional[str] = ""
 
 class StatuteCreate(BaseModel):
     title: str
@@ -73,6 +76,24 @@ class StatuteCreate(BaseModel):
     full_text: str
     keywords: List[str] = []
     effective_date: Optional[datetime] = None
+    practical_impact: Optional[str] = ""
+    student_relevance: Optional[str] = ""
+
+# User interactions with statutes
+class UserStatuteBookmark(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    statute_id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    notes: Optional[str] = ""
+
+class UserStatuteProgress(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    statute_id: str
+    read_at: datetime = Field(default_factory=datetime.utcnow)
+    time_spent: int = 0  # seconds
+    comprehension_score: Optional[int] = None  # 1-5 rating
 
 # Community Q&A Models
 class QuestionStatus(str, Enum):
