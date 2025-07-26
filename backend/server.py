@@ -991,6 +991,107 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def startup_db_client():
+    """Initialize database with common script templates"""
+    await initialize_script_templates()
+
+async def initialize_script_templates():
+    """Initialize the database with common legal script templates"""
+    # Check if scripts already exist
+    existing_count = await db.script_templates.count_documents({})
+    if existing_count > 0:
+        return  # Scripts already initialized
+    
+    common_scripts = [
+        {
+            "title": "Traffic Stop - Basic Rights",
+            "category": "traffic_stop",
+            "scenario": "When pulled over by police during a traffic stop",
+            "script_text": "Officer, I'm invoking my right to remain silent. I do not consent to any searches. I would like to speak with my attorney. Am I free to go?",
+            "legal_basis": "4th and 5th Amendment protections against unreasonable searches and self-incrimination",
+            "keywords": ["traffic stop", "police", "search", "rights"],
+            "state_specific": False,
+            "applicable_states": []
+        },
+        {
+            "title": "ICE Encounter - Know Your Rights",
+            "category": "ice_encounter", 
+            "scenario": "When approached by ICE or immigration officers",
+            "script_text": "I am exercising my right to remain silent. I do not consent to any search. I want to speak with my lawyer. I am not answering any questions. If you do not have a warrant signed by a judge, I am not opening the door.",
+            "legal_basis": "Constitutional rights apply to all persons in the US regardless of immigration status",
+            "keywords": ["ice", "immigration", "deportation", "warrant"],
+            "state_specific": False,
+            "applicable_states": []
+        },
+        {
+            "title": "Police Search Request",
+            "category": "police_search",
+            "scenario": "When police ask to search you, your car, or your home",
+            "script_text": "I do not consent to this search. I am invoking my 4th Amendment right against unreasonable searches. If you do not have a warrant, I do not give permission for this search.",
+            "legal_basis": "4th Amendment protection against unreasonable searches and seizures",
+            "keywords": ["search", "consent", "4th amendment", "warrant"],
+            "state_specific": False,
+            "applicable_states": []
+        },
+        {
+            "title": "Housing Dispute - Tenant Rights",
+            "category": "housing_dispute",
+            "scenario": "When dealing with landlord disputes or illegal eviction attempts",
+            "script_text": "I am aware of my tenant rights. Any eviction must follow proper legal procedures. I request all communications in writing. I will not vacate without a court order.",
+            "legal_basis": "State tenant-landlord laws and fair housing protections",
+            "keywords": ["eviction", "tenant", "landlord", "housing"],
+            "state_specific": True,
+            "applicable_states": ["CA", "NY", "TX", "FL"]
+        },
+        {
+            "title": "Workplace Rights - Discrimination",
+            "category": "workplace_rights",
+            "scenario": "When facing workplace discrimination or harassment",
+            "script_text": "I am documenting this incident for my records. This behavior appears to violate workplace policies and potentially federal employment law. I request this be addressed through proper HR channels.",
+            "legal_basis": "Title VII and other federal employment discrimination laws",
+            "keywords": ["discrimination", "harassment", "workplace", "hr"],
+            "state_specific": False,
+            "applicable_states": []
+        },
+        {
+            "title": "Police Questioning - Miranda Rights",
+            "category": "police_encounter",
+            "scenario": "When being questioned by police",
+            "script_text": "I am invoking my 5th Amendment right to remain silent. I want to speak with my attorney. I will not answer any questions without my lawyer present.",
+            "legal_basis": "5th Amendment right against self-incrimination and 6th Amendment right to counsel",
+            "keywords": ["miranda", "questioning", "attorney", "silence"],
+            "state_specific": False,
+            "applicable_states": []
+        },
+        {
+            "title": "Student Rights - School Search",
+            "category": "student_rights",
+            "scenario": "When school officials want to search your belongings",
+            "script_text": "I do not consent to this search. I am aware that schools have different search standards, but I am exercising my right to object. I want to call my parents/guardian.",
+            "legal_basis": "Students have limited 4th Amendment protections in schools (T.L.O. v. New Jersey)",
+            "keywords": ["school", "search", "student", "backpack"],
+            "state_specific": False,
+            "applicable_states": []
+        },
+        {
+            "title": "Consumer Rights - Debt Collection",
+            "category": "consumer_rights",
+            "scenario": "When dealing with aggressive debt collectors",
+            "script_text": "I am requesting that all communications be in writing. I dispute this debt and request verification. Please provide documentation proving I owe this amount.",
+            "legal_basis": "Fair Debt Collection Practices Act (FDCPA) protections",
+            "keywords": ["debt", "collection", "fdcpa", "verification"],
+            "state_specific": False,
+            "applicable_states": []
+        }
+    ]
+    
+    # Insert all script templates
+    script_templates = [ScriptTemplate(**script_data) for script_data in common_scripts]
+    await db.script_templates.insert_many([template.dict() for template in script_templates])
+    
+    logging.info(f"Initialized {len(script_templates)} script templates")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
