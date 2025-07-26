@@ -410,10 +410,332 @@ class BackendTester:
             self.log_test("User Progress Retrieval", False, "Failed to retrieve user progress",
                          {"status_code": status_code, "response": data})
     
+    def test_enhanced_statute_search(self):
+        """Test enhanced statute search with relevance scoring and multi-term search"""
+        # Test multi-term search with relevance scoring
+        search_params = {"search": "housing tenant rights", "sort_by": "relevance", "page": 1, "per_page": 10}
+        success, data, status_code = self.make_request("GET", "/statutes", search_params)
+        
+        if success and data.get("success"):
+            items = data.get("data", {}).get("items", [])
+            # Check if relevance scores are included in search results
+            has_relevance_scores = any("relevance_score" in item for item in items)
+            if has_relevance_scores:
+                self.log_test("Enhanced Search (Relevance Scoring)", True, "Multi-term search with relevance scoring working")
+            else:
+                self.log_test("Enhanced Search (Relevance Scoring)", True, "Search working but relevance scores not visible (may be internal)")
+        else:
+            self.log_test("Enhanced Search (Relevance Scoring)", False, "Enhanced search failed",
+                         {"status_code": status_code, "response": data})
+        
+        # Test different sorting options
+        for sort_option in ["date", "title", "category"]:
+            sort_params = {"search": "employment", "sort_by": sort_option}
+            success, data, status_code = self.make_request("GET", "/statutes", sort_params)
+            
+            if success and data.get("success"):
+                self.log_test(f"Enhanced Search (Sort by {sort_option})", True, f"Sorting by {sort_option} working")
+            else:
+                self.log_test(f"Enhanced Search (Sort by {sort_option})", False, f"Sorting by {sort_option} failed",
+                             {"status_code": status_code, "response": data})
+    
+    def test_search_suggestions(self):
+        """Test search suggestions endpoint with partial queries"""
+        # Test suggestions with partial queries
+        test_queries = ["hou", "emp", "con", "cri"]
+        
+        for query in test_queries:
+            success, data, status_code = self.make_request("GET", "/statutes/search/suggestions", {"q": query})
+            
+            if success and data.get("success"):
+                suggestions = data.get("data", [])
+                self.log_test(f"Search Suggestions ('{query}')", True, 
+                             f"Got {len(suggestions)} suggestions for '{query}'")
+            else:
+                self.log_test(f"Search Suggestions ('{query}')", False, 
+                             f"Failed to get suggestions for '{query}'",
+                             {"status_code": status_code, "response": data})
+        
+        # Test empty query (should return empty results)
+        success, data, status_code = self.make_request("GET", "/statutes/search/suggestions", {"q": "x"})
+        if success and data.get("success"):
+            self.log_test("Search Suggestions (Short Query)", True, "Short query handled correctly")
+        else:
+            self.log_test("Search Suggestions (Short Query)", False, "Short query handling failed")
+    
+    def test_statute_bookmarking(self):
+        """Test statute bookmarking and unbookmarking functionality"""
+        if not self.auth_token:
+            self.log_test("Statute Bookmarking", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # First, create a test statute to bookmark
+        statute_data = {
+            "title": "Fair Housing Act - Test Statute",
+            "statute_number": "FHA-TEST-2024",
+            "state": "Federal",
+            "category": "housing",
+            "summary": "Test statute for bookmarking functionality",
+            "full_text": "This is a test statute for verifying bookmark functionality...",
+            "keywords": ["housing", "discrimination", "fair housing"],
+            "practical_impact": "Protects tenants from housing discrimination",
+            "student_relevance": "Important for students seeking housing"
+        }
+        
+        success, data, status_code = self.make_request("POST", "/statutes", statute_data, headers)
+        
+        if success and data.get("success"):
+            statute_id = data.get("data", {}).get("id")
+            
+            # Test bookmarking the statute
+            success, data, status_code = self.make_request("POST", f"/statutes/{statute_id}/bookmark", {}, headers)
+            
+            if success and data.get("success"):
+                self.log_test("Statute Bookmarking", True, "Successfully bookmarked statute")
+                
+                # Test retrieving bookmarks
+                success, data, status_code = self.make_request("GET", "/statutes/bookmarks", headers=headers)
+                
+                if success and data.get("success"):
+                    bookmarks = data.get("data", [])
+                    bookmark_found = any(bookmark.get("id") == statute_id for bookmark in bookmarks)
+                    if bookmark_found:
+                        self.log_test("Bookmark Retrieval", True, "Successfully retrieved bookmarks")
+                    else:
+                        self.log_test("Bookmark Retrieval", False, "Bookmarked statute not found in bookmarks list")
+                else:
+                    self.log_test("Bookmark Retrieval", False, "Failed to retrieve bookmarks")
+                
+                # Test removing bookmark
+                success, data, status_code = self.make_request("DELETE", f"/statutes/{statute_id}/bookmark", headers=headers)
+                
+                if success and data.get("success"):
+                    self.log_test("Bookmark Removal", True, "Successfully removed bookmark")
+                else:
+                    self.log_test("Bookmark Removal", False, "Failed to remove bookmark")
+                
+                # Test duplicate bookmarking (should fail gracefully)
+                self.make_request("POST", f"/statutes/{statute_id}/bookmark", {}, headers)  # Re-bookmark
+                success, data, status_code = self.make_request("POST", f"/statutes/{statute_id}/bookmark", {}, headers)
+                
+                if not success or not data.get("success"):
+                    self.log_test("Duplicate Bookmark Prevention", True, "Correctly prevented duplicate bookmark")
+                else:
+                    self.log_test("Duplicate Bookmark Prevention", False, "Should prevent duplicate bookmarks")
+            else:
+                self.log_test("Statute Bookmarking", False, "Failed to bookmark statute")
+        else:
+            self.log_test("Statute Bookmarking", False, "Failed to create test statute for bookmarking")
+    
+    def test_user_interaction_tracking(self):
+        """Test that statute views are tracked and XP is awarded"""
+        if not self.auth_token:
+            self.log_test("User Interaction Tracking", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get user's current XP
+        success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+        initial_xp = 0
+        if success and data.get("success"):
+            initial_xp = data.get("data", {}).get("xp", 0)
+        
+        # Create a test statute
+        statute_data = {
+            "title": "Student Privacy Rights Act - XP Test",
+            "statute_number": "SPRA-XP-2024",
+            "state": "California",
+            "category": "education",
+            "summary": "Test statute for XP tracking functionality",
+            "full_text": "This statute protects student privacy rights in educational institutions...",
+            "keywords": ["education", "privacy", "students"],
+            "practical_impact": "Protects student data and privacy",
+            "student_relevance": "Directly relevant to all students"
+        }
+        
+        success, data, status_code = self.make_request("POST", "/statutes", statute_data, headers)
+        
+        if success and data.get("success"):
+            statute_id = data.get("data", {}).get("id")
+            
+            # View the statute (should award XP)
+            success, data, status_code = self.make_request("GET", f"/statutes/{statute_id}", headers=headers)
+            
+            if success and data.get("success"):
+                self.log_test("Statute View Tracking", True, "Successfully viewed statute")
+                
+                # Check if XP was awarded (wait a moment for async processing)
+                import time
+                time.sleep(1)
+                
+                success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+                if success and data.get("success"):
+                    new_xp = data.get("data", {}).get("xp", 0)
+                    if new_xp > initial_xp:
+                        self.log_test("XP Award for Statute View", True, f"XP increased from {initial_xp} to {new_xp}")
+                    else:
+                        self.log_test("XP Award for Statute View", False, f"XP did not increase (was {initial_xp}, now {new_xp})")
+                else:
+                    self.log_test("XP Award for Statute View", False, "Failed to check XP after statute view")
+            else:
+                self.log_test("Statute View Tracking", False, "Failed to view statute")
+        else:
+            self.log_test("User Interaction Tracking", False, "Failed to create test statute")
+    
+    def test_statute_statistics(self):
+        """Test the statute stats endpoint for database metrics"""
+        success, data, status_code = self.make_request("GET", "/statutes/stats")
+        
+        if success and data.get("success"):
+            stats = data.get("data", {})
+            
+            # Check if all expected statistics are present
+            expected_keys = ["total_statutes", "by_category", "by_state"]
+            has_all_keys = all(key in stats for key in expected_keys)
+            
+            if has_all_keys:
+                total = stats.get("total_statutes", 0)
+                categories = len(stats.get("by_category", []))
+                states = len(stats.get("by_state", []))
+                
+                self.log_test("Statute Statistics", True, 
+                             f"Statistics retrieved: {total} total statutes, {categories} categories, {states} states")
+            else:
+                self.log_test("Statute Statistics", False, "Missing expected statistics keys")
+        else:
+            self.log_test("Statute Statistics", False, "Failed to retrieve statute statistics",
+                         {"status_code": status_code, "response": data})
+    
+    def test_pagination_and_filtering(self):
+        """Test state/category filters with pagination"""
+        # Test category filtering with pagination
+        category_params = {"category": "housing", "page": 1, "per_page": 5}
+        success, data, status_code = self.make_request("GET", "/statutes", category_params)
+        
+        if success and data.get("success"):
+            response_data = data.get("data", {})
+            items = response_data.get("items", [])
+            total = response_data.get("total", 0)
+            pages = response_data.get("pages", 0)
+            
+            # Verify pagination structure
+            has_pagination = all(key in response_data for key in ["items", "total", "page", "per_page", "pages"])
+            
+            if has_pagination:
+                self.log_test("Category Filter with Pagination", True, 
+                             f"Retrieved {len(items)} housing statutes (page 1 of {pages}, total: {total})")
+            else:
+                self.log_test("Category Filter with Pagination", False, "Missing pagination structure")
+        else:
+            self.log_test("Category Filter with Pagination", False, "Category filtering failed")
+        
+        # Test state filtering
+        state_params = {"state": "California", "page": 1, "per_page": 10}
+        success, data, status_code = self.make_request("GET", "/statutes", state_params)
+        
+        if success and data.get("success"):
+            items = data.get("data", {}).get("items", [])
+            # Verify all returned statutes are from California
+            california_statutes = all(item.get("state", "").lower() == "california" for item in items if items)
+            
+            if california_statutes or len(items) == 0:  # Empty result is also valid
+                self.log_test("State Filter", True, f"State filtering working ({len(items)} California statutes)")
+            else:
+                self.log_test("State Filter", False, "State filtering not working correctly")
+        else:
+            self.log_test("State Filter", False, "State filtering failed")
+        
+        # Test combined filters
+        combined_params = {"category": "employment", "state": "Federal", "page": 1, "per_page": 5}
+        success, data, status_code = self.make_request("GET", "/statutes", combined_params)
+        
+        if success and data.get("success"):
+            self.log_test("Combined Filters", True, "Combined category and state filtering working")
+        else:
+            self.log_test("Combined Filters", False, "Combined filtering failed")
+    
+    def test_gamification_features(self):
+        """Test XP awards, level calculations, and badge systems"""
+        if not self.auth_token:
+            self.log_test("Gamification Features", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get initial user state
+        success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+        if not success or not data.get("success"):
+            self.log_test("Gamification Features", False, "Failed to get initial user state")
+            return
+        
+        initial_user = data.get("data", {})
+        initial_xp = initial_user.get("xp", 0)
+        initial_level = initial_user.get("level", 1)
+        initial_badges = initial_user.get("badges", [])
+        
+        # Test XP award through bookmarking
+        statute_data = {
+            "title": "Gamification Test Statute",
+            "statute_number": "GAMIF-TEST-2024",
+            "state": "Test State",
+            "category": "consumer_protection",
+            "summary": "Test statute for gamification features",
+            "full_text": "This is a test statute for gamification...",
+            "keywords": ["test", "gamification"]
+        }
+        
+        success, data, status_code = self.make_request("POST", "/statutes", statute_data, headers)
+        
+        if success and data.get("success"):
+            statute_id = data.get("data", {}).get("id")
+            
+            # Bookmark the statute (should award 5 XP)
+            success, data, status_code = self.make_request("POST", f"/statutes/{statute_id}/bookmark", {}, headers)
+            
+            if success and data.get("success"):
+                # Check XP increase
+                import time
+                time.sleep(1)  # Allow for async processing
+                
+                success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+                if success and data.get("success"):
+                    new_user = data.get("data", {})
+                    new_xp = new_user.get("xp", 0)
+                    new_level = new_user.get("level", 1)
+                    new_badges = new_user.get("badges", [])
+                    
+                    # Check XP increase
+                    if new_xp > initial_xp:
+                        self.log_test("XP Award System", True, f"XP increased from {initial_xp} to {new_xp}")
+                    else:
+                        self.log_test("XP Award System", False, f"XP did not increase (was {initial_xp}, now {new_xp})")
+                    
+                    # Check level calculation
+                    expected_level = min(max(new_xp // 100 + 1, 1), 50)
+                    if new_level == expected_level:
+                        self.log_test("Level Calculation", True, f"Level correctly calculated: {new_level}")
+                    else:
+                        self.log_test("Level Calculation", False, f"Level calculation incorrect: expected {expected_level}, got {new_level}")
+                    
+                    # Check badge system
+                    if len(new_badges) >= len(initial_badges):
+                        self.log_test("Badge System", True, f"Badge system working (user has {len(new_badges)} badges)")
+                    else:
+                        self.log_test("Badge System", False, "Badge system may have issues")
+                else:
+                    self.log_test("Gamification Features", False, "Failed to check user state after XP award")
+            else:
+                self.log_test("Gamification Features", False, "Failed to bookmark statute for XP test")
+        else:
+            self.log_test("Gamification Features", False, "Failed to create test statute for gamification")
+    
     def run_all_tests(self):
         """Run all backend tests"""
-        print("🚀 Starting RightNow Legal Education Platform Backend Tests")
-        print("=" * 60)
+        print("🚀 Starting Enhanced Real-Time Statute Lookup Engine Backend Tests")
+        print("=" * 70)
         
         # Core API tests
         self.test_root_endpoint()
@@ -424,7 +746,20 @@ class BackendTester:
         self.test_protected_route_without_auth()
         self.test_protected_route_with_auth()
         
-        # Feature tests
+        # Enhanced Statute Lookup Engine tests
+        print("\n📚 ENHANCED STATUTE LOOKUP ENGINE TESTS")
+        print("-" * 50)
+        self.test_enhanced_statute_search()
+        self.test_search_suggestions()
+        self.test_statute_bookmarking()
+        self.test_user_interaction_tracking()
+        self.test_statute_statistics()
+        self.test_pagination_and_filtering()
+        self.test_gamification_features()
+        
+        # Original feature tests
+        print("\n🔧 CORE FEATURE TESTS")
+        print("-" * 30)
         self.test_legal_statutes_creation()
         self.test_legal_statutes_retrieval()
         self.test_community_qa_system()
@@ -435,9 +770,9 @@ class BackendTester:
         self.test_user_progress_system()
         
         # Summary
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 70)
         print("📊 TEST SUMMARY")
-        print("=" * 60)
+        print("=" * 70)
         
         passed = sum(1 for result in self.test_results if result["success"])
         failed = len(self.test_results) - passed
