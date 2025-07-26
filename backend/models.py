@@ -247,6 +247,12 @@ class UserLearningProgress(BaseModel):
     last_accessed: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
 
+# AI Query Models (Legacy)
+class AIQueryCreate(BaseModel):
+    query_text: str
+    query_type: str = "legal_question"
+    context: Dict[str, Any] = {}
+
 # AI Chat Models
 class ChatMessage(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
