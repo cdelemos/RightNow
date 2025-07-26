@@ -9,6 +9,7 @@ import Dashboard from "./components/Dashboard/Dashboard";
 import StatuteLookup from "./components/Statutes/StatuteLookup";
 import AIChat from "./components/AI/AIChat";
 import MythFeed from "./components/Myths/MythFeed";
+import SimulationPlayer from "./components/Simulations/SimulationPlayer";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
