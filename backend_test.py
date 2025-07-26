@@ -1334,6 +1334,16 @@ class BackendTester:
         self.test_pagination_and_filtering()
         self.test_gamification_features()
         
+        # Myth-Busting Legal Feed tests (NEW FEATURE)
+        print("\n🎯 MYTH-BUSTING LEGAL FEED TESTS")
+        print("-" * 50)
+        self.test_myth_database_initialization()
+        self.test_myth_busting_feed_system()
+        self.test_myth_interaction_system()
+        self.test_myth_user_progress_tracking()
+        self.test_myth_view_and_engagement_counters()
+        self.test_myth_daily_reset_logic()
+        
         # Original feature tests
         print("\n🔧 CORE FEATURE TESTS")
         print("-" * 30)
