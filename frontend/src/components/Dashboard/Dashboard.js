@@ -78,7 +78,7 @@ const Dashboard = () => {
       gradient: 'from-green-400 to-green-600',
       bgGradient: 'from-green-50 to-green-100',
       textColor: 'text-green-700',
-      available: false
+      available: true
     },
     {
       title: 'Legal Myths',
