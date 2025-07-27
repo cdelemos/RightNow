@@ -138,13 +138,23 @@ const EmergencySOS = () => {
   };
 
   const renderSOSButton = () => (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-center space-y-2">
+      {/* Main SOS Button */}
+      <button
+        onClick={() => setShowSOSTray(true)}
+        className="bg-red-600 hover:bg-red-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse"
+        title="Emergency SOS Tray"
+      >
+        <span className="text-2xl">🚨</span>
+      </button>
+      
+      {/* Compass Rose Button */}
       <button
         onClick={() => setShowCompassRose(true)}
-        className="bg-red-600 hover:bg-red-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse"
-        title="Emergency Toolkit"
+        className="bg-amber-600 hover:bg-amber-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200"
+        title="Emergency Compass"
       >
-        <span className="text-2xl">🧭</span>
+        <span className="text-lg">🧭</span>
       </button>
     </div>
   );
