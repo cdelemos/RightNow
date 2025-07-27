@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import MascotWidget from '../Mascot/MascotWidget';
+import PictureFrameScenario from './PictureFrameScenario';
+import AchievementStickers from './AchievementStickers';
+import MarginScribbles from './MarginScribbles';
+import UserSignaturePage from './UserSignaturePage';
 
 const DailyLearning = () => {
   const { user } = useAuth();
