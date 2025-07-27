@@ -4159,6 +4159,7 @@ async def get_trophy_wall(current_user: User = Depends(get_current_user)):
         
         # Get protection details
         protection_details = []
+        unlocked_protection_ids = []
         for unlocked in unlocked_protections:
             protection = await db.regional_protections.find_one({"id": unlocked["protection_id"]})
             if protection:
@@ -4167,13 +4168,28 @@ async def get_trophy_wall(current_user: User = Depends(get_current_user)):
                     "unlocked_at": unlocked["unlocked_at"],
                     "is_bookmarked": unlocked.get("is_bookmarked", False)
                 })
+                unlocked_protection_ids.append(unlocked["protection_id"])
+        
+        # Get available protections that can be unlocked
+        available_protections = await db.regional_protections.find(
+            {"id": {"$nin": unlocked_protection_ids}}
+        ).to_list(100)
+        
+        available_protections_formatted = []
+        for protection in available_protections:
+            protection_obj = RegionalProtection(**protection)
+            available_protections_formatted.append(protection_obj.dict())
+        
+        # Update trophy wall statistics
+        await update_trophy_wall(current_user.id)
         
         return APIResponse(
             success=True,
             message="Trophy wall retrieved successfully",
             data={
                 "trophy_wall": TrophyWall(**trophy_wall).dict(),
-                "unlocked_protections": protection_details
+                "unlocked_protections": protection_details,
+                "available_protections": available_protections_formatted
             }
         )
         
