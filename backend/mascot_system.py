@@ -41,49 +41,49 @@ class MascotPersonality:
     # Mascot appearance configurations
     APPEARANCES = {
         MascotMood.PROTECTIVE: {
-            "emoji": "⚖️",
+            "emoji": "🔨",
             "expression": "🛡️",
             "color": "#2B4C7E",
             "animation": "steady"
         },
         MascotMood.CLEAR: {
-            "emoji": "⚖️",
+            "emoji": "🔨",
             "expression": "💡",
             "color": "#4A90E2",
             "animation": "focus"
         },
         MascotMood.EMPOWERING: {
-            "emoji": "⚖️",
+            "emoji": "🔨",
             "expression": "💪",
             "color": "#2E7D32",
             "animation": "strength"
         },
         MascotMood.SERIOUS: {
-            "emoji": "⚖️",
+            "emoji": "🔨",
             "expression": "⚠️",
             "color": "#D32F2F",
             "animation": "alert"
         },
         MascotMood.FOCUSED: {
-            "emoji": "⚖️",
+            "emoji": "🔨",
             "expression": "🎯",
             "color": "#7B1FA2",
             "animation": "precision"
         },
         MascotMood.ALERT: {
-            "emoji": "⚖️",
+            "emoji": "🔨",
             "expression": "🚨",
             "color": "#FF5722",
             "animation": "urgent"
         },
         MascotMood.SUPPORTIVE: {
-            "emoji": "⚖️",
+            "emoji": "🔨",
             "expression": "🤝",
             "color": "#00796B",
             "animation": "gentle"
         },
         MascotMood.VIGILANT: {
-            "emoji": "⚖️",
+            "emoji": "🔨",
             "expression": "👁️",
             "color": "#5D4037",
             "animation": "watchful"
