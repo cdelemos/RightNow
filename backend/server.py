@@ -3568,7 +3568,8 @@ async def get_gamification_dashboard(current_user: User = Depends(get_current_us
         recent_xp = []
         try:
             recent_xp_cursor = db.xp_transactions.find({"user_id": current_user.id}).sort("created_at", -1).limit(10)
-            recent_xp = await recent_xp_cursor.to_list(10)
+            recent_xp_raw = await recent_xp_cursor.to_list(10)
+            recent_xp = [clean_mongo_document(xp) for xp in recent_xp_raw]
         except Exception as e:
             logging.warning(f"Error fetching recent XP: {str(e)}")
             # Fallback XP transactions
@@ -3578,7 +3579,7 @@ async def get_gamification_dashboard(current_user: User = Depends(get_current_us
                     "xp_amount": 10,
                     "source": "ai_chat",
                     "description": "AI Chat Interaction",
-                    "created_at": datetime.utcnow()
+                    "created_at": datetime.utcnow().isoformat()
                 }
             ]
         
