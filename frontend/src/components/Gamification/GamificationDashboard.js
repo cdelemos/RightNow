@@ -318,7 +318,7 @@ const GamificationDashboard = () => {
           </div>
           
           <div className="space-y-2">
-            <h4 className="font-medium text-gray-800">Recent Transactions</h4>
+            <h4 className="font-medium text-book-leather">Recent Transactions</h4>
             {xpHistory.recent_transactions.slice(0, 10).map((transaction, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
