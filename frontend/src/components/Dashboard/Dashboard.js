@@ -119,6 +119,16 @@ const Dashboard = () => {
       bgGradient: 'from-red-50 to-red-100',
       textColor: 'text-red-700',
       available: true
+    },
+    {
+      title: 'Gamification Hub',
+      description: 'Track progress, earn rewards', 
+      icon: '🎮',
+      href: '/gamification',
+      gradient: 'from-purple-400 to-purple-600',
+      bgGradient: 'from-purple-50 to-purple-100',
+      textColor: 'text-purple-700',
+      available: true
     }
   ];
 
