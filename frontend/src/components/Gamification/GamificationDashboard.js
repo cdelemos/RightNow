@@ -327,6 +327,7 @@ const GamificationDashboard = () => {
             <div className="flex space-x-1">
               {[
                 { id: 'overview', label: 'Overview', icon: '📊' },
+                { id: 'justice-meter', label: 'Justice Meter', icon: '⚖️' },
                 { id: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
                 { id: 'xp-history', label: 'XP History', icon: '📈' }
               ].map(tab => (
@@ -349,6 +350,11 @@ const GamificationDashboard = () => {
 
         {/* Tab Content */}
         {activeTab === 'overview' && renderOverview()}
+        {activeTab === 'justice-meter' && (
+          <div className="flex justify-center">
+            <JusticeMeter compact={false} showDetails={true} />
+          </div>
+        )}
         {activeTab === 'leaderboard' && renderLeaderboard()}
         {activeTab === 'xp-history' && renderXPHistory()}
       </div>
