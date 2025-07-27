@@ -1727,6 +1727,290 @@ async def get_user_learning_progress(current_user: User = Depends(get_current_us
         data=enriched_progress
     )
 
+# Helper functions for enhanced learning paths
+def calculate_path_relevance(path: LearningPath, user_prefs: dict) -> float:
+    """Calculate relevance score for a learning path based on user preferences"""
+    score = 0.0
+    
+    # Check if path type matches user interests
+    if path.path_type.value in user_prefs.get("primary_interests", []):
+        score += 10.0
+    
+    # Check difficulty preference
+    preferred_difficulty = user_prefs.get("preferred_difficulty", 2)
+    difficulty_diff = abs(path.difficulty_level - preferred_difficulty)
+    score += max(0, 5 - difficulty_diff)
+    
+    # Check target audience match
+    user_situation = user_prefs.get("user_situation", [])
+    if any(situation in path.target_audience for situation in user_situation):
+        score += 5.0
+    
+    # Check estimated duration vs time commitment
+    weekly_commitment = user_prefs.get("weekly_time_commitment", 60)
+    if path.estimated_duration <= weekly_commitment:
+        score += 3.0
+    elif path.estimated_duration <= weekly_commitment * 2:
+        score += 1.0
+    
+    return min(score, 20.0)  # Cap at 20
+
+def get_personalization_reason(path: LearningPath, user_prefs: dict) -> str:
+    """Get explanation for why this path was recommended"""
+    reasons = []
+    
+    if path.path_type.value in user_prefs.get("primary_interests", []):
+        reasons.append(f"matches your interest in {path.path_type.value.replace('_', ' ')}")
+    
+    preferred_difficulty = user_prefs.get("preferred_difficulty", 2)
+    if abs(path.difficulty_level - preferred_difficulty) <= 1:
+        reasons.append("fits your preferred difficulty level")
+    
+    user_situation = user_prefs.get("user_situation", [])
+    matching_audience = [aud for aud in path.target_audience if aud in user_situation]
+    if matching_audience:
+        reasons.append(f"designed for {', '.join(matching_audience)}")
+    
+    if not reasons:
+        reasons.append("recommended based on your profile")
+    
+    return "Recommended because it " + " and ".join(reasons)
+
+async def check_prerequisites_met(user_id: str, prerequisites: List[str]) -> bool:
+    """Check if user has completed all prerequisite learning paths"""
+    if not prerequisites:
+        return True
+    
+    for prereq_id in prerequisites:
+        progress = await db.user_learning_progress.find_one({
+            "user_id": user_id,
+            "learning_path_id": prereq_id,
+            "is_completed": True
+        })
+        if not progress:
+            return False
+    
+    return True
+
+async def get_node_with_unlock_status(node_id: str, path: LearningPath, user_id: str) -> dict:
+    """Get a node with its unlock status"""
+    node = next((n for n in path.path_nodes if n.id == node_id), None)
+    if not node:
+        return {}
+    
+    node_dict = node.dict()
+    
+    # Get user progress to check unlock status
+    user_progress = await db.user_learning_progress.find_one({
+        "user_id": user_id,
+        "learning_path_id": path.id
+    })
+    
+    node_dict["is_unlocked"] = await is_node_unlocked(node, user_progress, user_id)
+    node_dict["is_completed"] = node.id in (user_progress.get("completed_nodes", []) if user_progress else [])
+    
+    return node_dict
+
+async def is_node_unlocked(node: LearningPathNode, user_progress: dict, user_id: str) -> bool:
+    """Check if a learning node is unlocked for the user"""
+    # First node is always unlocked if path is started
+    if not user_progress:
+        return False
+    
+    # Check if user has enough XP
+    user = await db.users.find_one({"id": user_id})
+    if user and user.get("xp", 0) < node.xp_required:
+        return False
+    
+    # Check if prerequisites are completed
+    completed_nodes = user_progress.get("completed_nodes", [])
+    for prereq_id in node.prerequisites:
+        if prereq_id not in completed_nodes:
+            return False
+    
+    return True
+
+async def validate_completion_criteria(criteria: Dict[str, Any], completion_data: Dict[str, Any], user_id: str) -> bool:
+    """Validate if completion criteria are met"""
+    # This is a flexible system for different types of completion requirements
+    
+    if criteria.get("type") == "quiz_score":
+        required_score = criteria.get("min_score", 80)
+        user_score = completion_data.get("score", 0)
+        return user_score >= required_score
+    
+    elif criteria.get("type") == "time_spent":
+        required_minutes = criteria.get("min_minutes", 5)
+        time_spent = completion_data.get("time_spent_minutes", 0)
+        return time_spent >= required_minutes
+    
+    elif criteria.get("type") == "interaction_count":
+        required_interactions = criteria.get("min_interactions", 1)
+        interactions = completion_data.get("interaction_count", 0)
+        return interactions >= required_interactions
+    
+    # Default: no specific criteria, just mark as complete
+    return True
+
+async def get_general_recommendations(limit: int) -> APIResponse:
+    """Get general recommendations for users without personalization"""
+    # Get popular learning paths
+    popular_paths = await db.learning_paths.find({
+        "is_active": True,
+        "difficulty_level": {"$lte": 2}  # Beginner-friendly
+    }).limit(limit // 2).to_list(limit // 2)
+    
+    # Get recent myths
+    recent_myths = await db.legal_myths.find({
+        "status": "published"
+    }).sort("published_at", -1).limit(limit // 4).to_list(limit // 4)
+    
+    # Get beginner simulations
+    beginner_sims = await db.simulation_scenarios.find({
+        "is_active": True,
+        "difficulty_level": 1
+    }).limit(limit // 4).to_list(limit // 4)
+    
+    recommendations = []
+    
+    # Add learning paths
+    for path in popular_paths:
+        recommendations.append({
+            "content_type": "learning_path",
+            "content_id": path["id"],
+            "title": path["title"],
+            "description": path["description"],
+            "confidence_score": 0.7,
+            "reason": "Popular beginner-friendly content"
+        })
+    
+    # Add myths
+    for myth in recent_myths:
+        recommendations.append({
+            "content_type": "myth",
+            "content_id": myth["id"],
+            "title": myth["title"],
+            "description": myth["summary"],
+            "confidence_score": 0.6,
+            "reason": "Recent myth-busting content"
+        })
+    
+    # Add simulations
+    for sim in beginner_sims:
+        recommendations.append({
+            "content_type": "simulation",
+            "content_id": sim["id"],
+            "title": sim["title"],
+            "description": sim["description"],
+            "confidence_score": 0.5,
+            "reason": "Interactive beginner scenario"
+        })
+    
+    return APIResponse(
+        success=True,
+        message="General recommendations retrieved successfully",
+        data=recommendations[:limit]
+    )
+
+async def recommend_learning_paths(user_prefs: dict, user_id: str, limit: int) -> List[Dict[str, Any]]:
+    """Recommend learning paths based on user preferences"""
+    # Get paths matching user interests
+    primary_interests = user_prefs.get("primary_interests", [])
+    query = {"is_active": True}
+    
+    if primary_interests:
+        query["path_type"] = {"$in": primary_interests}
+    
+    # Get user's completed paths to avoid recommending them
+    completed_progress = await db.user_learning_progress.find({
+        "user_id": user_id,
+        "is_completed": True
+    }).to_list(100)
+    
+    completed_path_ids = [p["learning_path_id"] for p in completed_progress]
+    if completed_path_ids:
+        query["id"] = {"$nin": completed_path_ids}
+    
+    paths = await db.learning_paths.find(query).limit(limit * 2).to_list(limit * 2)
+    
+    recommendations = []
+    for path in paths:
+        path_obj = LearningPath(**path)
+        relevance_score = calculate_path_relevance(path_obj, user_prefs)
+        
+        recommendations.append({
+            "content_type": "learning_path",
+            "content_id": path["id"],
+            "title": path["title"],
+            "description": path["description"],
+            "confidence_score": min(relevance_score / 20.0, 1.0),
+            "reason": get_personalization_reason(path_obj, user_prefs)
+        })
+    
+    # Sort by confidence and return top results
+    recommendations.sort(key=lambda x: x["confidence_score"], reverse=True)
+    return recommendations[:limit]
+
+async def recommend_myths(user_prefs: dict, user_id: str, limit: int) -> List[Dict[str, Any]]:
+    """Recommend myths based on user preferences"""
+    # Get myths user hasn't read
+    read_myths = await db.user_myth_progress.find({"user_id": user_id}).to_list(1000)
+    read_myth_ids = [m["myth_id"] for m in read_myths]
+    
+    query = {
+        "status": "published",
+        "id": {"$nin": read_myth_ids} if read_myth_ids else {}
+    }
+    
+    myths = await db.legal_myths.find(query).limit(limit).to_list(limit)
+    
+    recommendations = []
+    for myth in myths:
+        recommendations.append({
+            "content_type": "myth",
+            "content_id": myth["id"],
+            "title": myth["title"],
+            "description": myth["summary"],
+            "confidence_score": 0.7,
+            "reason": "Unread myth-busting content"
+        })
+    
+    return recommendations
+
+async def recommend_simulations(user_prefs: dict, user_id: str, limit: int) -> List[Dict[str, Any]]:
+    """Recommend simulations based on user preferences"""
+    # Get user's preferred difficulty
+    preferred_difficulty = user_prefs.get("preferred_difficulty", 2)
+    
+    # Get simulations user hasn't completed
+    completed_sims = await db.simulation_progress.find({
+        "user_id": user_id,
+        "completed": True
+    }).to_list(1000)
+    
+    completed_sim_ids = [s["scenario_id"] for s in completed_sims]
+    
+    query = {
+        "is_active": True,
+        "difficulty_level": {"$lte": preferred_difficulty + 1},
+        "id": {"$nin": completed_sim_ids} if completed_sim_ids else {}
+    }
+    
+    simulations = await db.simulation_scenarios.find(query).limit(limit).to_list(limit)
+    
+    recommendations = []
+    for sim in simulations:
+        recommendations.append({
+            "content_type": "simulation",
+            "content_id": sim["id"],
+            "title": sim["title"],
+            "description": sim["description"],
+            "confidence_score": 0.8,
+            "reason": "Interactive scenario matching your skill level"
+        })
+    
+    return recommendations
+
 # AI Chat endpoints
 @api_router.post("/ai/chat", response_model=APIResponse)
 async def chat_with_ai(request: ChatRequest, current_user: User = Depends(get_current_user)):
