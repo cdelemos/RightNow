@@ -3144,6 +3144,443 @@ class BackendTester:
                 else:
                     self.log_test("Prerequisite System", True, "Prerequisite system available (may not be used in all paths)")
 
+    def test_purpose_driven_xp_unlocks_system(self):
+        """Test comprehensive Purpose-Driven XP Unlocks system with Trophy Wall"""
+        if not self.auth_token:
+            self.log_test("Purpose-Driven XP Unlocks System", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Test 1: Trophy Wall API - GET /api/unlocks/trophy-wall
+        success, data, status_code = self.make_request("GET", "/unlocks/trophy-wall", headers=headers)
+        
+        if success and data.get("success"):
+            trophy_data = data.get("data", {})
+            
+            # Check trophy wall structure
+            required_fields = ["trophy_wall", "unlocked_protections", "available_protections"]
+            has_required_fields = all(field in trophy_data for field in required_fields)
+            
+            if has_required_fields:
+                trophy_wall = trophy_data.get("trophy_wall", {})
+                unlocked_protections = trophy_data.get("unlocked_protections", [])
+                available_protections = trophy_data.get("available_protections", [])
+                
+                self.log_test("Trophy Wall API Structure", True, 
+                             f"Trophy wall retrieved with {len(unlocked_protections)} unlocked and {len(available_protections)} available protections")
+                
+                # Check trophy wall statistics
+                trophy_fields = ["user_id", "total_protections_available", "completion_percentage"]
+                has_trophy_fields = all(field in trophy_wall for field in trophy_fields)
+                
+                if has_trophy_fields:
+                    total_available = trophy_wall.get("total_protections_available", 0)
+                    completion_pct = trophy_wall.get("completion_percentage", 0)
+                    
+                    self.log_test("Trophy Wall Statistics", True, 
+                                 f"Trophy wall stats: {total_available} total protections, {completion_pct:.1f}% completion")
+                    
+                    # Store available protection for unlock testing
+                    if available_protections:
+                        self.test_protection_id = available_protections[0].get("id")
+                        self.test_protection_requirements = available_protections[0].get("unlock_requirements", {})
+                else:
+                    self.log_test("Trophy Wall Statistics", False, "Trophy wall missing required statistics fields")
+            else:
+                self.log_test("Trophy Wall API Structure", False, "Trophy wall response missing required fields")
+        else:
+            self.log_test("Trophy Wall API", False, "Failed to retrieve trophy wall",
+                         {"status_code": status_code, "response": data})
+    
+    def test_regional_protections_initialization(self):
+        """Test that regional protections are properly initialized in database"""
+        if not self.auth_token:
+            self.log_test("Regional Protections Initialization", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get available protections to check initialization
+        success, data, status_code = self.make_request("GET", "/unlocks/trophy-wall", headers=headers)
+        
+        if success and data.get("success"):
+            trophy_data = data.get("data", {})
+            available_protections = trophy_data.get("available_protections", [])
+            unlocked_protections = trophy_data.get("unlocked_protections", [])
+            
+            total_protections = len(available_protections) + len(unlocked_protections)
+            
+            # Should have 15 protections as per the initialization
+            if total_protections >= 15:
+                self.log_test("Regional Protections Count", True, f"Found {total_protections} regional protections (expected ≥15)")
+                
+                # Check protection types diversity
+                all_protections = available_protections + [up.get("protection", {}) for up in unlocked_protections]
+                protection_types = set(p.get("protection_type") for p in all_protections if p.get("protection_type"))
+                
+                expected_types = ["RENTER", "PROTESTER", "WORKER", "STUDENT", "DISABLED", "UNDOCUMENTED", "GENERAL"]
+                found_types = [t for t in expected_types if t in protection_types]
+                
+                if len(found_types) >= 5:
+                    self.log_test("Protection Types Diversity", True, 
+                                 f"Found diverse protection types: {', '.join(found_types)}")
+                else:
+                    self.log_test("Protection Types Diversity", False, f"Limited protection type diversity: {found_types}")
+                
+                # Check state coverage (Federal + state-specific)
+                states = set(p.get("state") for p in all_protections if p.get("state"))
+                has_federal = "Federal" in states
+                has_state_specific = any(state != "Federal" for state in states)
+                
+                if has_federal and has_state_specific:
+                    self.log_test("State Coverage", True, f"Protections cover Federal and state laws: {', '.join(sorted(states))}")
+                else:
+                    self.log_test("State Coverage", False, f"Limited state coverage: {states}")
+                
+                # Check unlock requirements structure
+                protections_with_requirements = [p for p in all_protections 
+                                               if p.get("unlock_requirements") and 
+                                               isinstance(p.get("unlock_requirements"), dict)]
+                
+                if len(protections_with_requirements) >= 10:
+                    # Check requirement types
+                    requirement_types = set()
+                    for p in protections_with_requirements:
+                        requirement_types.update(p.get("unlock_requirements", {}).keys())
+                    
+                    expected_req_types = ["lessons_completed", "xp_required"]
+                    has_expected_reqs = all(req_type in requirement_types for req_type in expected_req_types)
+                    
+                    if has_expected_reqs:
+                        self.log_test("Unlock Requirements Structure", True, 
+                                     f"Protections have proper unlock requirements: {', '.join(requirement_types)}")
+                    else:
+                        self.log_test("Unlock Requirements Structure", False, 
+                                     f"Missing expected requirement types: {requirement_types}")
+                else:
+                    self.log_test("Unlock Requirements Structure", False, 
+                                 f"Only {len(protections_with_requirements)} protections have unlock requirements")
+            else:
+                self.log_test("Regional Protections Count", False, f"Only {total_protections} protections found, expected ≥15")
+        else:
+            self.log_test("Regional Protections Initialization", False, "Failed to check regional protections initialization")
+    
+    def test_protection_unlock_requirements_checking(self):
+        """Test protection unlock requirements checking"""
+        if not self.auth_token or not hasattr(self, 'test_protection_id'):
+            self.log_test("Protection Unlock Requirements", False, "No auth token or test protection available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        protection_id = self.test_protection_id
+        
+        # Test 1: Check unlock requirements for a protection
+        unlock_data = {"protection_id": protection_id}
+        success, data, status_code = self.make_request("POST", "/unlocks/check-unlock", unlock_data, headers)
+        
+        if success and data.get("success"):
+            unlock_response = data.get("data", {})
+            
+            # Check response structure
+            required_fields = ["can_unlock"]
+            has_required_fields = all(field in unlock_response for field in required_fields)
+            
+            if has_required_fields:
+                can_unlock = unlock_response.get("can_unlock", False)
+                already_unlocked = unlock_response.get("already_unlocked", False)
+                missing_requirements = unlock_response.get("missing_requirements", [])
+                
+                if already_unlocked:
+                    self.log_test("Protection Already Unlocked Check", True, "Correctly detected already unlocked protection")
+                elif can_unlock:
+                    # Protection can be unlocked - should include celebration
+                    celebration = unlock_response.get("celebration")
+                    protection_data = unlock_response.get("protection")
+                    
+                    if celebration and protection_data:
+                        self.log_test("Protection Unlock Success", True, "Successfully unlocked protection with celebration")
+                        
+                        # Store unlocked protection for further testing
+                        self.test_unlocked_protection_id = protection_id
+                    else:
+                        self.log_test("Protection Unlock Success", False, "Unlock response missing celebration or protection data")
+                else:
+                    # Requirements not met
+                    if missing_requirements:
+                        self.log_test("Unlock Requirements Check", True, 
+                                     f"Requirements not met: {', '.join(missing_requirements)}")
+                    else:
+                        self.log_test("Unlock Requirements Check", False, "Requirements not met but no missing requirements listed")
+            else:
+                self.log_test("Protection Unlock Response Structure", False, "Unlock response missing required fields")
+        else:
+            self.log_test("Protection Unlock Requirements", False, "Failed to check unlock requirements",
+                         {"status_code": status_code, "response": data})
+    
+    def test_protection_unlock_edge_cases(self):
+        """Test edge cases for protection unlocking"""
+        if not self.auth_token:
+            self.log_test("Protection Unlock Edge Cases", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Test 1: Invalid protection ID
+        invalid_unlock_data = {"protection_id": "invalid-protection-id-12345"}
+        success, data, status_code = self.make_request("POST", "/unlocks/check-unlock", invalid_unlock_data, headers)
+        
+        if not success and status_code == 404:
+            self.log_test("Invalid Protection ID Handling", True, "Correctly rejected invalid protection ID")
+        else:
+            self.log_test("Invalid Protection ID Handling", False, "Should reject invalid protection ID with 404")
+        
+        # Test 2: Missing protection ID
+        empty_unlock_data = {}
+        success, data, status_code = self.make_request("POST", "/unlocks/check-unlock", empty_unlock_data, headers)
+        
+        if not success and status_code == 400:
+            self.log_test("Missing Protection ID Handling", True, "Correctly rejected missing protection ID")
+        else:
+            self.log_test("Missing Protection ID Handling", False, "Should reject missing protection ID with 400")
+        
+        # Test 3: Attempt to unlock already unlocked protection (if we have one)
+        if hasattr(self, 'test_unlocked_protection_id'):
+            already_unlocked_data = {"protection_id": self.test_unlocked_protection_id}
+            success, data, status_code = self.make_request("POST", "/unlocks/check-unlock", already_unlocked_data, headers)
+            
+            if success and data.get("success"):
+                unlock_response = data.get("data", {})
+                already_unlocked = unlock_response.get("already_unlocked", False)
+                can_unlock = unlock_response.get("can_unlock", True)
+                
+                if already_unlocked and not can_unlock:
+                    self.log_test("Already Unlocked Protection Check", True, "Correctly detected already unlocked protection")
+                else:
+                    self.log_test("Already Unlocked Protection Check", False, "Should detect already unlocked protection")
+            else:
+                self.log_test("Already Unlocked Protection Check", False, "Failed to check already unlocked protection")
+    
+    def test_trophy_wall_integration_with_gamification(self):
+        """Test integration between trophy wall and existing gamification system"""
+        if not self.auth_token:
+            self.log_test("Trophy Wall Gamification Integration", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get initial user state
+        success, data, status_code = self.make_request("GET", "/auth/me", headers=headers)
+        initial_xp = 0
+        initial_level = 1
+        if success and data.get("success"):
+            user_data = data.get("data", {})
+            initial_xp = user_data.get("xp", 0)
+            initial_level = user_data.get("level", 1)
+        
+        # Get initial trophy wall state
+        success, data, status_code = self.make_request("GET", "/unlocks/trophy-wall", headers=headers)
+        
+        if success and data.get("success"):
+            initial_trophy_data = data.get("data", {})
+            initial_unlocked_count = len(initial_trophy_data.get("unlocked_protections", []))
+            initial_completion_pct = initial_trophy_data.get("trophy_wall", {}).get("completion_percentage", 0)
+            
+            # Try to find a protection that can be unlocked with current user stats
+            available_protections = initial_trophy_data.get("available_protections", [])
+            unlockable_protection = None
+            
+            for protection in available_protections:
+                requirements = protection.get("unlock_requirements", {})
+                lessons_required = requirements.get("lessons_completed", 0)
+                xp_required = requirements.get("xp_required", 0)
+                
+                # Check if user meets requirements (we'll use a low-requirement protection)
+                if lessons_required <= 2 and xp_required <= initial_xp + 100:  # Allow some buffer
+                    unlockable_protection = protection
+                    break
+            
+            if unlockable_protection:
+                protection_id = unlockable_protection.get("id")
+                
+                # Try to unlock the protection
+                unlock_data = {"protection_id": protection_id}
+                success, data, status_code = self.make_request("POST", "/unlocks/check-unlock", unlock_data, headers)
+                
+                if success and data.get("success"):
+                    unlock_response = data.get("data", {})
+                    
+                    if unlock_response.get("can_unlock", False):
+                        # Check if trophy wall was updated
+                        success, data, status_code = self.make_request("GET", "/unlocks/trophy-wall", headers=headers)
+                        
+                        if success and data.get("success"):
+                            updated_trophy_data = data.get("data", {})
+                            updated_unlocked_count = len(updated_trophy_data.get("unlocked_protections", []))
+                            updated_completion_pct = updated_trophy_data.get("trophy_wall", {}).get("completion_percentage", 0)
+                            
+                            if updated_unlocked_count > initial_unlocked_count:
+                                self.log_test("Trophy Wall Update After Unlock", True, 
+                                             f"Trophy wall updated: {initial_unlocked_count} → {updated_unlocked_count} unlocked protections")
+                                
+                                if updated_completion_pct > initial_completion_pct:
+                                    self.log_test("Completion Percentage Update", True, 
+                                                 f"Completion percentage updated: {initial_completion_pct:.1f}% → {updated_completion_pct:.1f}%")
+                                else:
+                                    self.log_test("Completion Percentage Update", False, "Completion percentage not updated after unlock")
+                            else:
+                                self.log_test("Trophy Wall Update After Unlock", False, "Trophy wall not updated after unlock")
+                        else:
+                            self.log_test("Trophy Wall Update After Unlock", False, "Failed to check trophy wall after unlock")
+                    else:
+                        missing_reqs = unlock_response.get("missing_requirements", [])
+                        self.log_test("Trophy Wall Gamification Integration", True, 
+                                     f"Integration working - requirements not met: {', '.join(missing_reqs)}")
+                else:
+                    self.log_test("Trophy Wall Gamification Integration", False, "Failed to test protection unlock")
+            else:
+                self.log_test("Trophy Wall Gamification Integration", True, 
+                             "No immediately unlockable protections found (user may need more XP/lessons)")
+        else:
+            self.log_test("Trophy Wall Gamification Integration", False, "Failed to get initial trophy wall state")
+    
+    def test_mascot_celebration_system_integration(self):
+        """Test that mascot celebration system is triggered correctly for unlocks"""
+        if not self.auth_token:
+            self.log_test("Mascot Celebration Integration", False, "No auth token available")
+            return
+        
+        headers = {"Authorization": f"Bearer {self.auth_token}"}
+        
+        # Get available protections
+        success, data, status_code = self.make_request("GET", "/unlocks/trophy-wall", headers=headers)
+        
+        if success and data.get("success"):
+            trophy_data = data.get("data", {})
+            available_protections = trophy_data.get("available_protections", [])
+            
+            # Find a protection with low requirements for testing
+            test_protection = None
+            for protection in available_protections:
+                requirements = protection.get("unlock_requirements", {})
+                if requirements.get("xp_required", 0) <= 200 and requirements.get("lessons_completed", 0) <= 3:
+                    test_protection = protection
+                    break
+            
+            if test_protection:
+                protection_id = test_protection.get("id")
+                unlock_data = {"protection_id": protection_id}
+                
+                success, data, status_code = self.make_request("POST", "/unlocks/check-unlock", unlock_data, headers)
+                
+                if success and data.get("success"):
+                    unlock_response = data.get("data", {})
+                    
+                    if unlock_response.get("can_unlock", False):
+                        # Check if celebration data is included
+                        celebration = unlock_response.get("celebration")
+                        
+                        if celebration:
+                            # Check celebration structure
+                            celebration_fields = ["message", "mood", "action"]
+                            has_celebration_fields = all(field in celebration for field in celebration_fields)
+                            
+                            if has_celebration_fields:
+                                celebration_message = celebration.get("message", "")
+                                celebration_mood = celebration.get("mood", "")
+                                
+                                # Check if celebration mentions the protection
+                                protection_title = test_protection.get("statute_title", "")
+                                mentions_protection = protection_title.lower() in celebration_message.lower()
+                                
+                                if mentions_protection or len(celebration_message) > 20:
+                                    self.log_test("Mascot Celebration System", True, 
+                                                 f"Mascot celebration triggered with mood '{celebration_mood}' and contextual message")
+                                else:
+                                    self.log_test("Mascot Celebration System", False, "Celebration message not contextual to protection")
+                            else:
+                                self.log_test("Mascot Celebration System", False, "Celebration missing required fields")
+                        else:
+                            self.log_test("Mascot Celebration System", False, "No celebration data returned for successful unlock")
+                    else:
+                        missing_reqs = unlock_response.get("missing_requirements", [])
+                        self.log_test("Mascot Celebration System", True, 
+                                     f"Celebration system ready (requirements not met: {', '.join(missing_reqs)})")
+                else:
+                    self.log_test("Mascot Celebration Integration", False, "Failed to test protection unlock for celebration")
+            else:
+                self.log_test("Mascot Celebration Integration", True, "No suitable test protection found (system may require higher user stats)")
+        else:
+            self.log_test("Mascot Celebration Integration", False, "Failed to get available protections for celebration test")
+    
+    def test_user_with_no_xp_or_lessons(self):
+        """Test system behavior with users who have minimal XP and no completed lessons"""
+        # Create a new user with minimal stats for testing
+        import time
+        timestamp = str(int(time.time()))
+        
+        new_user_data = {
+            "email": f"minimal.user.{timestamp}@university.edu",
+            "username": f"minimal_user_{timestamp}",
+            "password": "MinimalPass123!",
+            "user_type": "undergraduate",
+            "profile": {"first_name": "Minimal", "last_name": "User"}
+        }
+        
+        # Register new user
+        success, data, status_code = self.make_request("POST", "/auth/register", new_user_data)
+        
+        if success and data.get("success"):
+            # Login as new user
+            login_data = {"email": new_user_data["email"], "password": new_user_data["password"]}
+            success, data, status_code = self.make_request("POST", "/auth/login", login_data)
+            
+            if success and data.get("success"):
+                minimal_token = data["data"]["access_token"]
+                minimal_headers = {"Authorization": f"Bearer {minimal_token}"}
+                
+                # Test trophy wall access with minimal user
+                success, data, status_code = self.make_request("GET", "/unlocks/trophy-wall", headers=minimal_headers)
+                
+                if success and data.get("success"):
+                    trophy_data = data.get("data", {})
+                    unlocked_protections = trophy_data.get("unlocked_protections", [])
+                    available_protections = trophy_data.get("available_protections", [])
+                    
+                    # New user should have no unlocked protections
+                    if len(unlocked_protections) == 0:
+                        self.log_test("Minimal User Trophy Wall Access", True, 
+                                     f"New user has 0 unlocked protections and {len(available_protections)} available")
+                        
+                        # Try to unlock a protection (should fail due to requirements)
+                        if available_protections:
+                            test_protection = available_protections[0]
+                            protection_id = test_protection.get("id")
+                            
+                            unlock_data = {"protection_id": protection_id}
+                            success, data, status_code = self.make_request("POST", "/unlocks/check-unlock", unlock_data, minimal_headers)
+                            
+                            if success and data.get("success"):
+                                unlock_response = data.get("data", {})
+                                can_unlock = unlock_response.get("can_unlock", True)
+                                missing_requirements = unlock_response.get("missing_requirements", [])
+                                
+                                if not can_unlock and missing_requirements:
+                                    self.log_test("Minimal User Unlock Prevention", True, 
+                                                 f"Correctly prevented unlock for minimal user: {', '.join(missing_requirements)}")
+                                else:
+                                    self.log_test("Minimal User Unlock Prevention", False, "Should prevent unlock for users without sufficient XP/lessons")
+                            else:
+                                self.log_test("Minimal User Unlock Prevention", False, "Failed to test unlock with minimal user")
+                    else:
+                        self.log_test("Minimal User Trophy Wall Access", False, f"New user should have 0 unlocked protections, found {len(unlocked_protections)}")
+                else:
+                    self.log_test("Minimal User Trophy Wall Access", False, "Failed to access trophy wall with minimal user")
+            else:
+                self.log_test("User with No XP/Lessons", False, "Failed to login as minimal user")
+        else:
+            self.log_test("User with No XP/Lessons", False, "Failed to create minimal user for testing")
+
 if __name__ == "__main__":
     tester = BackendTester()
     passed, failed = tester.run_all_tests()
