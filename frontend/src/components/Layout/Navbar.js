@@ -7,7 +7,9 @@ import NotificationPanel from '../Notifications/NotificationPanel';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { unreadCount } = useNotifications();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const location = useLocation();
 
   const navigation = [
