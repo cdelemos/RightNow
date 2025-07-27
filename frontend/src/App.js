@@ -2,6 +2,7 @@ import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { GamificationProvider } from "./context/GamificationContext";
 import Navbar from "./components/Layout/Navbar";
 import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
@@ -14,6 +15,8 @@ import CommunityQA from "./components/Community/CommunityQA";
 import LearningPaths from "./components/Learning/LearningPaths";
 import EmergencySOS from "./components/Emergency/EmergencySOS";
 import EmergencyContacts from "./components/Emergency/EmergencyContacts";
+import GamificationDashboard from "./components/Gamification/GamificationDashboard";
+import GamificationWidget from "./components/Gamification/GamificationWidget";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
