@@ -3496,7 +3496,7 @@ async def get_gamification_dashboard(current_user: User = Depends(get_current_us
                         "name": badge.get("name", "Unknown Badge"),
                         "description": badge.get("description", ""),
                         "rarity": badge.get("rarity", "common"),
-                        "earned_at": user_badge.get("earned_at")
+                        "earned_at": badge.get("earned_at", datetime.utcnow()).isoformat() if badge.get("earned_at") else datetime.utcnow().isoformat()
                     })
             user_badges = badge_details
         except Exception as e:
@@ -3508,14 +3508,14 @@ async def get_gamification_dashboard(current_user: User = Depends(get_current_us
                     "name": "First Steps",
                     "description": "Started your legal journey",
                     "rarity": "common",
-                    "earned_at": datetime.utcnow()
+                    "earned_at": datetime.utcnow().isoformat()
                 },
                 {
                     "id": "2",
                     "name": "Knowledge Seeker",
                     "description": "Completed 5 lessons",
                     "rarity": "uncommon",
-                    "earned_at": datetime.utcnow()
+                    "earned_at": datetime.utcnow().isoformat()
                 }
             ]
         
