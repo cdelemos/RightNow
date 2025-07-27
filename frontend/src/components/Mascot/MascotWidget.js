@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 
-const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
+const MascotWidget = ({ position = 'bottom-left', size = 'medium', onUPLWarning }) => {
   const { user } = useAuth();
   const [mascotState, setMascotState] = useState({
     isVisible: true,
@@ -28,8 +28,29 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
     notification_frequency: 'normal'
   });
 
+  const [uplWarnings, setUplWarnings] = useState([]);
+
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
   const API = `${BACKEND_URL}/api`;
+
+  // UPL Warning messages from Gavvy
+  const uplWarningMessages = {
+    high: [
+      "🚨 Hold up! That sounds like you need specific legal advice, not just education. Let me help you find a real attorney!",
+      "⚠️ Whoa there! I can't give legal advice for your specific situation. You'll need to consult with a licensed attorney.",
+      "🔨 I must stop you right there! What you're asking requires professional legal counsel, not educational information."
+    ],
+    medium: [
+      "⚠️ Just a friendly reminder: I provide legal education, not advice for your specific situation.",
+      "🔨 Let's keep this educational! For specific legal matters, you'll want to consult with an attorney.",
+      "⚖️ Remember, I'm here to teach general legal concepts, not to advise on your personal legal matters."
+    ],
+    low: [
+      "💡 Quick note: This is educational information only. Always consult an attorney for specific legal advice.",
+      "🔨 Just so you know, I provide general legal education, not personalized legal advice.",
+      "⚖️ Educational reminder: For specific legal matters, please consult with a qualified attorney."
+    ]
+  };
 
   useEffect(() => {
     if (user && settings.mascot_enabled) {
@@ -37,6 +58,57 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
       loadMascotGreeting();
     }
   }, [user]);
+
+  // Method to show UPL warning
+  const showUPLWarning = (severity, context) => {
+    const warningMessages = uplWarningMessages[severity] || uplWarningMessages.medium;
+    const randomMessage = warningMessages[Math.floor(Math.random() * warningMessages.length)];
+    
+    setMascotState(prev => ({
+      ...prev,
+      message: randomMessage,
+      mood: severity === 'high' ? 'concerned' : 'protective',
+      appearance: {
+        ...prev.appearance,
+        expression: severity === 'high' ? '🚨' : '⚠️',
+        animation: 'urgent'
+      },
+      showMessage: true,
+      isAnimating: true
+    }));
+
+    // Add to warnings history
+    setUplWarnings(prev => [...prev, {
+      id: Date.now(),
+      severity,
+      message: randomMessage,
+      timestamp: new Date(),
+      context
+    }]);
+
+    // Hide message after 8 seconds
+    setTimeout(() => {
+      setMascotState(prev => ({
+        ...prev,
+        showMessage: false,
+        isAnimating: false,
+        animation: 'steady'
+      }));
+    }, 8000);
+
+    // Callback to parent component
+    if (onUPLWarning) {
+      onUPLWarning(severity, randomMessage);
+    }
+  };
+
+  // Expose the method globally for other components to use
+  useEffect(() => {
+    window.gavvyShowUPLWarning = showUPLWarning;
+    return () => {
+      delete window.gavvyShowUPLWarning;
+    };
+  }, []);
 
   const loadMascotSettings = async () => {
     try {
