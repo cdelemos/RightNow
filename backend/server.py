@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
-from mascot_system import MascotInteractionEngine, MascotAction, MascotMood
+from mascot_system import MascotInteractionEngine, MascotAction
+from models import *
 import logging
 from pathlib import Path
 from typing import List, Optional, Dict, Any
