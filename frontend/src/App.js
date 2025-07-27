@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { GamificationProvider } from "./context/GamificationContext";
 import { UnlockProvider } from "./context/UnlockContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import BookContainer from "./components/Book/BookContainer";
 import DailyLearning from "./components/Book/DailyLearning";
 import Login from "./components/Auth/Login";
@@ -22,6 +23,7 @@ import GamificationWidget from "./components/Gamification/GamificationWidget";
 import MascotWidget from "./components/Mascot/MascotWidget";
 import TrophyWall from "./components/Unlocks/TrophyWall";
 import AboutUs from "./components/About/AboutUs";
+import ToastNotifications from "./components/Notifications/ToastNotifications";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
