@@ -3039,6 +3039,7 @@ async def generate_myth_suggestions(user_id: str, learning_patterns: list) -> li
         
         if relevance > 0.3:  # Only suggest if there's reasonable relevance
             suggestions.append({
+                "user_id": user_id,
                 "suggestion_type": "myth",
                 "title": f"Myth: {myth['title']}",
                 "description": myth.get("description", myth["myth_statement"]),
