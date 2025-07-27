@@ -55,6 +55,132 @@ const AIChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const trackInteraction = async (message, response) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Determine topic category from message content
+      const topicCategory = detectTopicCategory(message);
+      
+      // Calculate engagement level based on response quality
+      const engagementLevel = response.confidence_score || 0.5;
+      
+      await axios.post(`${API}/ai/memory/track`, {
+        interaction_type: 'ai_chat',
+        topic_category: topicCategory,
+        legal_concept: extractLegalConcept(message, response),
+        engagement_level: engagementLevel
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Failed to track interaction:', error);
+    }
+  };
+
+  const storeMemoryContext = async (message, response) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Extract important context from the conversation
+      const contextKey = extractContextKey(message);
+      const contextValue = extractContextValue(message, response);
+      
+      if (contextKey && contextValue) {
+        await axios.post(`${API}/ai/memory/context`, {
+          session_id: sessionId,
+          context_type: 'legal_concept',
+          context_key: contextKey,
+          context_value: contextValue,
+          importance_score: response.confidence_score || 0.5
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Update memory display
+        if (memoryContextRef.current) {
+          memoryContextRef.current.loadMemoryContext();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to store memory context:', error);
+    }
+  };
+
+  const detectTopicCategory = (message) => {
+    const categories = {
+      'housing': ['rent', 'landlord', 'eviction', 'lease', 'apartment', 'tenant'],
+      'employment': ['job', 'work', 'boss', 'fired', 'workplace', 'salary', 'overtime'],
+      'criminal': ['police', 'arrest', 'charged', 'court', 'lawyer', 'rights'],
+      'immigration': ['visa', 'citizen', 'deport', 'green card', 'immigration', 'border'],
+      'family': ['divorce', 'custody', 'child support', 'marriage', 'family court'],
+      'consumer': ['debt', 'credit', 'scam', 'contract', 'purchase', 'refund']
+    };
+    
+    const messageLower = message.toLowerCase();
+    for (const [category, keywords] of Object.entries(categories)) {
+      if (keywords.some(keyword => messageLower.includes(keyword))) {
+        return category;
+      }
+    }
+    return 'general';
+  };
+
+  const extractLegalConcept = (message, response) => {
+    // Extract main legal concepts from the message and response
+    const concepts = [];
+    
+    // Common legal terms
+    const legalTerms = [
+      'rights', 'constitutional', 'amendment', 'statute', 'law', 'legal',
+      'court', 'judge', 'lawsuit', 'contract', 'liability', 'damages',
+      'defendant', 'plaintiff', 'evidence', 'testimony', 'jurisdiction'
+    ];
+    
+    const combinedText = (message + ' ' + response.response).toLowerCase();
+    legalTerms.forEach(term => {
+      if (combinedText.includes(term)) {
+        concepts.push(term);
+      }
+    });
+    
+    return concepts.join(', ') || 'general inquiry';
+  };
+
+  const extractContextKey = (message) => {
+    // Extract key context from user message
+    const questionWords = ['what', 'how', 'when', 'where', 'why', 'can', 'should', 'is', 'are'];
+    const words = message.toLowerCase().split(' ');
+    
+    // Find the main topic by removing question words
+    const mainTopic = words.filter(word => !questionWords.includes(word)).slice(0, 3).join(' ');
+    return mainTopic || 'user inquiry';
+  };
+
+  const extractContextValue = (message, response) => {
+    // Extract valuable context from the exchange
+    if (response.suggested_scripts && response.suggested_scripts.length > 0) {
+      return `User interested in scripts: ${response.suggested_scripts.map(s => s.title).join(', ')}`;
+    }
+    
+    if (response.upl_risk_flagged) {
+      return `User query flagged for UPL risk: ${message}`;
+    }
+    
+    return `User asked: ${message}`;
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    // Handle suggestion clicks - navigate to relevant content
+    const suggestionMessage = `Tell me more about: ${suggestion.title}`;
+    setInputMessage(suggestionMessage);
+    
+    // Auto-send the suggestion as a message
+    setTimeout(() => {
+      sendMessage();
+    }, 100);
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
 
