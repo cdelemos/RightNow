@@ -124,6 +124,11 @@ function App() {
                 <EmergencyContacts />
               </ProtectedRoute>
             } />
+            <Route path="/gamification" element={
+              <ProtectedRoute>
+                <GamificationDashboard />
+              </ProtectedRoute>
+            } />
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -132,6 +137,11 @@ function App() {
           {/* Emergency SOS - Always available when authenticated */}
           <ProtectedRoute>
             <EmergencySOS />
+          </ProtectedRoute>
+          
+          {/* Gamification Widget - Always available when authenticated */}
+          <ProtectedRoute>
+            <GamificationWidget position="top-right" />
           </ProtectedRoute>
         </BrowserRouter>
       </div>
