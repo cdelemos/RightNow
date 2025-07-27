@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useGamification } from '../../context/GamificationContext';
+import { useUnlock } from '../../context/UnlockContext';
 import axios from 'axios';
 
 const TrophyWall = () => {
