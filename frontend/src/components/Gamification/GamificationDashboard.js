@@ -156,8 +156,8 @@ const GamificationDashboard = () => {
                 <div className="flex items-center space-x-3">
                   <span className="text-2xl">{streak.icon}</span>
                   <div>
-                    <div className="font-medium text-gray-800">{streak.display_name}</div>
-                    <div className="text-sm text-gray-600">{streak.description}</div>
+                    <div className="font-medium text-book-leather">{streak.display_name}</div>
+                    <div className="text-sm text-forest-600">{streak.description}</div>
                   </div>
                 </div>
                 <div className="text-right">
