@@ -3537,7 +3537,7 @@ async def get_emergency_contacts(current_user: User = Depends(get_current_user))
     return APIResponse(
         success=True, 
         message="Emergency contacts retrieved successfully",
-        data=[EmergencyContact(**contact) for contact in contacts]
+        data=[EmergencyContact(**contact).dict() for contact in contacts]
     )
 
 @api_router.put("/emergency/contacts/{contact_id}", response_model=APIResponse)
