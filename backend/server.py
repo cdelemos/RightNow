@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from backend.mascot_system import MascotInteractionEngine, MascotAction, MascotMood
+import logging
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import bcrypt
