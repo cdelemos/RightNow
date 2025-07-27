@@ -100,9 +100,10 @@ function App() {
           {/* All other routes wrapped in AuthProvider */}
           <Route path="/*" element={
             <AuthProvider>
-              <GamificationProvider>
-                <UnlockProvider>
-                  <Routes>
+              <NotificationProvider>
+                <GamificationProvider>
+                  <UnlockProvider>
+                    <Routes>
                     {/* Public routes */}
                     <Route path="/login" element={
                       <PublicRoute>
