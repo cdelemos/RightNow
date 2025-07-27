@@ -3,6 +3,7 @@ import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { GamificationProvider } from "./context/GamificationContext";
+import { UnlockProvider } from "./context/UnlockContext";
 import BookContainer from "./components/Book/BookContainer";
 import DailyLearning from "./components/Book/DailyLearning";
 import Login from "./components/Auth/Login";
