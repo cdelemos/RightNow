@@ -148,14 +148,14 @@ const Register = () => {
               </div>
 
               <div>
-                <label htmlFor="user_type" className="block text-sm font-medium text-sage-700 mb-2">
+                <label htmlFor="user_type" className="block text-sm font-medium text-forest-700 mb-2">
                   I am a...
                 </label>
                 <div className="relative">
                   <select
                     id="user_type"
                     name="user_type"
-                    className="w-full px-4 py-3 border border-sage-200 bg-sage-50/50 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 appearance-none"
+                    className="w-full px-4 py-3 border border-forest-200 bg-forest-50/50 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent transition-all duration-200 appearance-none"
                     value={formData.user_type}
                     onChange={handleChange}
                   >
@@ -166,7 +166,7 @@ const Register = () => {
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="w-5 h-5 text-sage-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-forest-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -180,7 +180,7 @@ const Register = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-sage-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-forest-700 mb-2">
                   Password
                 </label>
                 <input
@@ -189,7 +189,7 @@ const Register = () => {
                   type="password"
                   autoComplete="new-password"
                   required
-                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  className="w-full px-4 py-3 border border-forest-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent transition-all duration-200 bg-forest-50/50"
                   placeholder="Create a password"
                   value={formData.password}
                   onChange={handleChange}
@@ -197,7 +197,7 @@ const Register = () => {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-sage-700 mb-2">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-forest-700 mb-2">
                   Confirm Password
                 </label>
                 <input
