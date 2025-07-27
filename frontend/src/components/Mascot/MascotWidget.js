@@ -224,7 +224,7 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium', onUPLWarning 
     
     if (mascotState.showMessage) {
       // Hide message if showing
-      setMascotState(prev => ({ ...prev, showMessage: false }));
+      setMascotState(prev => ({ ...prev, showMessage: false, isAnimating: false }));
     } else {
       // Show random study tip
       getStudyTip();
@@ -244,10 +244,10 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium', onUPLWarning 
   };
 
   const positionClasses = {
-    'bottom-left': 'fixed bottom-6 left-6 z-50',
-    'bottom-right': 'fixed bottom-6 right-6 z-50',
-    'top-left': 'fixed top-20 left-6 z-50',
-    'top-right': 'fixed top-20 right-6 z-50'
+    'bottom-left': 'fixed bottom-6 left-6 z-30',
+    'bottom-right': 'fixed bottom-6 right-6 z-30',
+    'top-left': 'fixed top-20 left-6 z-30',
+    'top-right': 'fixed top-20 right-6 z-30'
   };
 
   const sizeClasses = {
