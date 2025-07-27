@@ -497,16 +497,30 @@ class QuickAccessTool(BaseModel):
     icon: str
     action_data: Dict[str, Any] = {}
 
-# Gamification Models
+# Enhanced Gamification Models
+class BadgeCategory(str, Enum):
+    KNOWLEDGE = "knowledge"
+    ENGAGEMENT = "engagement"
+    ACHIEVEMENT = "achievement"
+    MILESTONE = "milestone"
+    SPECIAL = "special"
+
+class BadgeRarity(str, Enum):
+    COMMON = "common"
+    RARE = "rare"
+    EPIC = "epic"
+    LEGENDARY = "legendary"
+
 class Badge(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: str
     icon: str
-    category: str
+    category: BadgeCategory
     requirements: Dict[str, Any] = {}
     xp_reward: int = 0
-    rarity: str = "common"  # common, rare, epic, legendary
+    rarity: BadgeRarity = BadgeRarity.COMMON
+    is_hidden: bool = False  # Hidden badges are surprises
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class UserBadge(BaseModel):
@@ -515,6 +529,84 @@ class UserBadge(BaseModel):
     badge_id: str
     earned_at: datetime = Field(default_factory=datetime.utcnow)
     progress: Optional[Dict[str, Any]] = {}
+
+class Achievement(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str
+    icon: str
+    category: str
+    target_value: int  # e.g., 100 for "Read 100 statutes"
+    current_value: int = 0
+    xp_reward: int = 0
+    badge_reward: Optional[str] = None  # Badge ID to award
+    is_completed: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UserAchievement(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    achievement_id: str
+    current_progress: int = 0
+    completed_at: Optional[datetime] = None
+    is_completed: bool = False
+
+class Streak(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    streak_type: str  # "daily_login", "daily_myth", "weekly_learning", etc.
+    current_count: int = 0
+    best_count: int = 0
+    last_activity: datetime = Field(default_factory=datetime.utcnow)
+    is_active: bool = True
+
+class UserStats(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    total_xp: int = 0
+    level: int = 1
+    badges_earned: int = 0
+    achievements_completed: int = 0
+    
+    # Activity stats
+    statutes_read: int = 0
+    myths_read: int = 0
+    questions_asked: int = 0
+    answers_provided: int = 0
+    simulations_completed: int = 0
+    learning_paths_completed: int = 0
+    ai_chats_initiated: int = 0
+    
+    # Engagement stats
+    daily_streak: int = 0
+    weekly_streak: int = 0
+    total_study_time: int = 0  # in minutes
+    
+    # Social stats
+    upvotes_received: int = 0
+    downvotes_received: int = 0
+    content_shared: int = 0
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Leaderboard(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    leaderboard_type: str  # "weekly_xp", "monthly_xp", "statute_master", etc.
+    user_rankings: List[Dict[str, Any]] = []  # [{"user_id": str, "score": int, "rank": int}]
+    period_start: datetime
+    period_end: datetime
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class XPTransaction(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    action: str  # "read_statute", "answer_question", etc.
+    xp_amount: int
+    description: str
+    context: Dict[str, Any] = {}  # Additional context about the action
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 # API Response Models
 class APIResponse(BaseModel):
