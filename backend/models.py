@@ -621,18 +621,15 @@ class MascotMood(str, Enum):
 
 class MascotAction(str, Enum):
     WELCOME = "welcome"
-    CONGRATULATE = "congratulate"
-    ENCOURAGE = "encourage"
-    CELEBRATE_LEVEL_UP = "celebrate_level_up"
-    CELEBRATE_BADGE = "celebrate_badge"
-    REMIND_STREAK = "remind_streak"
-    INTRODUCE_FEATURE = "introduce_feature"
-    STUDY_TIP = "study_tip"
-    DAILY_GREETING = "daily_greeting"
-    ACHIEVEMENT_UNLOCK = "achievement_unlock"
-    LEARNING_PATH_COMPLETE = "learning_path_complete"
-    FIRST_QUESTION = "first_question"
-    EMERGENCY_SOS_INTRO = "emergency_sos_intro"
+    LESSON_COMPLETE = "lesson_complete"
+    INCORRECT_ANSWER = "incorrect_answer"
+    EMERGENCY_SITUATION = "emergency_situation"
+    RIGHTS_UNLOCKED = "rights_unlocked"
+    TUTORIAL_INTRO = "tutorial_intro"
+    CONTEXTUAL_TOOLTIP = "contextual_tooltip"
+    PROTECTION_REMINDER = "protection_reminder"
+    CLARITY_EXPLANATION = "clarity_explanation"
+    UPL_WARNING = "upl_warning"
 
 class MascotInteraction(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
