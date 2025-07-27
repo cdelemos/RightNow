@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGamification } from '../../context/GamificationContext';
 import { useAuth } from '../../context/AuthContext';
+import JusticeMeter from './JusticeMeter';
 
 const GamificationDashboard = () => {
   const { user } = useAuth();
