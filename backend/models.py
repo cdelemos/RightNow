@@ -659,6 +659,151 @@ class MascotSettings(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+# Personalized Learning by Protection Type Models
+class ProtectionType(str, Enum):
+    UNDOCUMENTED = "undocumented"
+    RENTER = "renter"
+    PROTESTER = "protester"
+    STUDENT = "student"
+    WORKER = "worker"
+    LGBTQ = "lgbtq"
+    DISABLED = "disabled"
+    PARENT = "parent"
+    SENIOR = "senior"
+    GENERAL = "general"
+
+class UserProtectionProfile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    primary_protection_type: ProtectionType
+    secondary_protection_types: List[ProtectionType] = []
+    location_state: Optional[str] = None
+    location_city: Optional[str] = None
+    specific_concerns: List[str] = []
+    notification_preferences: Dict[str, bool] = {
+        "push_notifications": True,
+        "email_updates": True,
+        "sms_alerts": False
+    }
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ContentTag(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    content_id: str
+    content_type: str  # "statute", "myth", "simulation", "learning_path"
+    protection_types: List[ProtectionType]
+    relevance_score: float = 1.0  # 0.0 to 1.0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class PersonalizedRecommendation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    content_id: str
+    content_type: str
+    protection_type: ProtectionType
+    relevance_score: float
+    reason: str
+    is_viewed: bool = False
+    is_completed: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Purpose-Driven XP Unlocks Models
+class RegionalProtection(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    statute_code: str
+    statute_title: str
+    protection_description: str
+    state: str
+    protection_type: ProtectionType
+    unlock_requirements: Dict[str, int]  # {"lessons_completed": 3, "xp_required": 100}
+    is_federal: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UnlockedProtection(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    protection_id: str
+    unlocked_at: datetime = Field(default_factory=datetime.utcnow)
+    viewed_at: Optional[datetime] = None
+    is_bookmarked: bool = False
+
+class TrophyWall(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    unlocked_protections: List[str] = []  # List of UnlockedProtection IDs
+    total_protections_available: int = 0
+    completion_percentage: float = 0.0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+# UPL Risk Flagging Models
+class UPLRiskLevel(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+class UPLFlag(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    query_text: str
+    risk_level: UPLRiskLevel
+    flag_reason: str
+    flagged_keywords: List[str] = []
+    action_taken: str  # "warning_shown", "query_blocked", "escalated"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UPLSettings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    risk_keywords: Dict[str, List[str]] = {
+        "personal_legal_advice": ["my case", "I was arrested", "I got a ticket", "should I", "what should I do"],
+        "specific_case_details": ["yesterday", "last week", "court date", "my lawyer", "my situation"],
+        "urgent_legal_matters": ["emergency", "urgent", "immediately", "right now", "ASAP"]
+    }
+    risk_thresholds: Dict[str, int] = {
+        "medium": 2,
+        "high": 3,
+        "critical": 5
+    }
+    enabled: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+# AI Memory & Suggestion Engine Models
+class AIMemory(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    topic: str
+    subtopics: List[str] = []
+    user_understanding_level: int = 1  # 1-5 scale
+    last_interaction: datetime = Field(default_factory=datetime.utcnow)
+    interaction_count: int = 1
+    user_feedback: Optional[str] = None
+    needs_follow_up: bool = False
+
+class LearningRecommendation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    recommended_content_id: str
+    content_type: str
+    recommendation_reason: str
+    confidence_score: float
+    is_viewed: bool = False
+    is_accepted: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UserLearningPattern(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    preferred_content_types: List[str] = []
+    learning_time_preferences: List[str] = []
+    difficulty_preference: str = "medium"  # "easy", "medium", "hard"
+    topics_of_interest: List[str] = []
+    completion_rates: Dict[str, float] = {}
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
 # API Response Models
 class APIResponse(BaseModel):
     success: bool
