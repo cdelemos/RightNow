@@ -20,7 +20,7 @@ const ChapterTabs = ({ onPageFlip }) => {
       icon: '🛠️',
       href: '/emergency-contacts',
       color: 'bg-red-600',
-      position: 'top-40'
+      position: 'top-36'
     },
     {
       id: 'ai',
@@ -28,7 +28,7 @@ const ChapterTabs = ({ onPageFlip }) => {
       icon: '🤖',
       href: '/ai-chat',
       color: 'bg-purple-600',
-      position: 'top-60'
+      position: 'top-52'
     },
     {
       id: 'dashboard',
@@ -36,15 +36,15 @@ const ChapterTabs = ({ onPageFlip }) => {
       icon: '🏆',
       href: '/gamification',
       color: 'bg-gold-600',
-      position: 'top-80'
+      position: 'top-68'
     },
     {
       id: 'profile',
-      title: 'Profile',
-      icon: '👤',
-      href: '/profile',
-      color: 'bg-forest-600',
-      position: 'top-100'
+      title: 'Myths',
+      icon: '🎯',
+      href: '/myths',
+      color: 'bg-green-600',
+      position: 'top-84'
     }
   ];
 
@@ -56,7 +56,7 @@ const ChapterTabs = ({ onPageFlip }) => {
   };
 
   return (
-    <div className="absolute right-0 top-0 bottom-0 w-16 z-10">
+    <div className="relative h-full">
       {tabs.map((tab) => {
         const isActive = location.pathname === tab.href;
         
@@ -64,20 +64,22 @@ const ChapterTabs = ({ onPageFlip }) => {
           <button
             key={tab.id}
             onClick={() => handleTabClick(tab.href)}
-            className={`absolute right-0 ${tab.position} w-20 h-16 ${tab.color} ${
-              isActive ? 'shadow-lg scale-110' : 'hover:scale-105'
-            } transition-all duration-300 rounded-l-xl flex flex-col items-center justify-center text-white group`}
-            style={{
-              clipPath: 'polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%)'
-            }}
+            className={`absolute ${tab.position} w-16 h-12 ${tab.color} ${
+              isActive ? 'shadow-lg scale-105 z-10' : 'hover:scale-105'
+            } transition-all duration-300 rounded-r-lg flex flex-col items-center justify-center text-white group`}
           >
-            <div className="text-xl mb-1">{tab.icon}</div>
-            <div className="text-xs font-bold">{tab.title}</div>
+            <div className="text-lg mb-1">{tab.icon}</div>
+            <div className="text-xs font-bold leading-tight">{tab.title}</div>
             
             {/* Active indicator */}
             {isActive && (
-              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-full"></div>
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-white rounded-full"></div>
             )}
+            
+            {/* Hover tooltip */}
+            <div className="absolute left-20 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              {tab.title}
+            </div>
           </button>
         );
       })}
