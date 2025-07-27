@@ -156,6 +156,37 @@ const MarginScribbles = ({ position = 'right', context = 'general' }) => {
 
   if (!currentQuote) return null;
 
+  // Embedded layout for left page
+  if (position === 'embedded') {
+    return (
+      <div className={`transition-all duration-500 ${
+        animatingQuote ? 'opacity-0 transform translate-y-2' : 'opacity-100 transform translate-y-0'
+      }`}>
+        <div className="relative">
+          {/* Quote text */}
+          <div className={`${getStyleClasses(currentQuote.style)} ${currentQuote.color} leading-relaxed mb-2`}>
+            "{currentQuote.text}"
+          </div>
+          
+          {/* Author */}
+          <div className="text-xs text-forest-600 text-right">
+            <div className="font-medium">— {currentQuote.author}</div>
+            <div className="text-forest-500 italic">{currentQuote.context}</div>
+          </div>
+          
+          {/* Refresh button */}
+          <button
+            onClick={showRandomQuote}
+            className="absolute top-0 right-0 text-forest-400 hover:text-forest-600 text-xs"
+            title="New quote"
+          >
+            ↻
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`fixed ${getPositionClasses()} z-20 pointer-events-none`}>
       <div className={`max-w-xs transition-all duration-500 ${
