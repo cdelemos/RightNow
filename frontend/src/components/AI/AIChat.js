@@ -528,6 +528,56 @@ const AIChat = () => {
         </div>
       )}
 
+      {/* AI Memory and Suggestions Sidebar */}
+      <div className="flex gap-4 mt-6">
+        {/* Suggestions Panel */}
+        {showSuggestions && (
+          <div className="w-80">
+            <SuggestionEngine onSuggestionClick={handleSuggestionClick} />
+          </div>
+        )}
+        
+        {/* Memory Panel */}
+        {showMemory && (
+          <div className="w-80">
+            <MemoryContext 
+              ref={memoryContextRef}
+              sessionId={sessionId}
+              onMemoryUpdate={() => {
+                // Refresh suggestions when memory is updated
+                window.location.reload();
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Toggle buttons for mobile */}
+      <div className="fixed bottom-4 right-4 flex space-x-2">
+        <button
+          onClick={() => setShowSuggestions(!showSuggestions)}
+          className={`p-3 rounded-full shadow-lg transition-colors ${
+            showSuggestions 
+              ? 'bg-forest-600 text-white' 
+              : 'bg-white text-forest-600 border border-forest-300'
+          }`}
+          title="Toggle suggestions"
+        >
+          <span className="text-lg">💡</span>
+        </button>
+        <button
+          onClick={() => setShowMemory(!showMemory)}
+          className={`p-3 rounded-full shadow-lg transition-colors ${
+            showMemory 
+              ? 'bg-forest-600 text-white' 
+              : 'bg-white text-forest-600 border border-forest-300'
+          }`}
+          title="Toggle memory"
+        >
+          <span className="text-lg">🧠</span>
+        </button>
+      </div>
+
       {/* UPL Risk Warning */}
       {uplRiskWarning && (
         <UPLRiskWarning
