@@ -2732,6 +2732,323 @@ async def get_user_progress(current_user: User = Depends(get_current_user)):
         }
     )
 
+# AI Memory & Suggestion Engine endpoints
+@api_router.post("/ai/memory/track", response_model=APIResponse)
+async def track_user_interaction(
+    interaction_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Track user interactions for learning pattern analysis"""
+    try:
+        # Extract interaction details
+        interaction_type = interaction_data.get("interaction_type", "question")
+        topic_category = interaction_data.get("topic_category", "general")
+        legal_concept = interaction_data.get("legal_concept", "")
+        engagement_level = interaction_data.get("engagement_level", 0.5)
+        
+        # Check if this pattern already exists
+        existing_pattern = await db.user_learning_patterns.find_one({
+            "user_id": current_user.id,
+            "interaction_type": interaction_type,
+            "topic_category": topic_category,
+            "legal_concept": legal_concept
+        })
+        
+        if existing_pattern:
+            # Update existing pattern
+            await db.user_learning_patterns.update_one(
+                {"id": existing_pattern["id"]},
+                {
+                    "$set": {
+                        "last_interaction": datetime.utcnow(),
+                        "engagement_level": (existing_pattern["engagement_level"] + engagement_level) / 2
+                    },
+                    "$inc": {"frequency_count": 1}
+                }
+            )
+        else:
+            # Create new pattern
+            pattern = UserLearningPattern(
+                user_id=current_user.id,
+                interaction_type=interaction_type,
+                topic_category=topic_category,
+                legal_concept=legal_concept,
+                engagement_level=engagement_level
+            )
+            await db.user_learning_patterns.insert_one(pattern.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Interaction tracked successfully",
+            data={"tracked": True}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error tracking interaction: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to track interaction")
+
+@api_router.get("/ai/suggestions", response_model=APIResponse)
+async def get_personalized_suggestions(
+    current_user: User = Depends(get_current_user),
+    limit: int = 10
+):
+    """Get personalized content suggestions based on user learning patterns"""
+    try:
+        # Get user's learning patterns
+        learning_patterns = await db.user_learning_patterns.find(
+            {"user_id": current_user.id}
+        ).sort("last_interaction", -1).to_list(50)
+        
+        # Get existing suggestions that haven't been dismissed
+        existing_suggestions = await db.personalized_suggestions.find({
+            "user_id": current_user.id,
+            "is_dismissed": False
+        }).sort("created_at", -1).to_list(limit)
+        
+        # If we have recent suggestions, return them
+        if existing_suggestions:
+            return APIResponse(
+                success=True,
+                message="Personalized suggestions retrieved successfully",
+                data={"suggestions": existing_suggestions}
+            )
+        
+        # Generate new suggestions based on learning patterns
+        suggestions = []
+        
+        # Get user's protection profile
+        protection_profile = await db.user_protection_profiles.find_one(
+            {"user_id": current_user.id}
+        )
+        
+        if protection_profile:
+            # Suggest relevant protections
+            suggestions.extend(await generate_protection_suggestions(
+                current_user.id, protection_profile, learning_patterns
+            ))
+        
+        # Suggest learning paths based on patterns
+        suggestions.extend(await generate_learning_path_suggestions(
+            current_user.id, learning_patterns
+        ))
+        
+        # Suggest myths based on topics of interest
+        suggestions.extend(await generate_myth_suggestions(
+            current_user.id, learning_patterns
+        ))
+        
+        # Sort by relevance score and limit results
+        suggestions.sort(key=lambda x: x.relevance_score, reverse=True)
+        suggestions = suggestions[:limit]
+        
+        # Store suggestions in database
+        if suggestions:
+            suggestion_docs = [PersonalizedSuggestion(**suggestion).dict() for suggestion in suggestions]
+            await db.personalized_suggestions.insert_many(suggestion_docs)
+        
+        return APIResponse(
+            success=True,
+            message="Personalized suggestions generated successfully",
+            data={"suggestions": suggestions}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error generating suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate suggestions")
+
+@api_router.post("/ai/suggestions/{suggestion_id}/dismiss", response_model=APIResponse)
+async def dismiss_suggestion(
+    suggestion_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Dismiss a personalized suggestion"""
+    try:
+        result = await db.personalized_suggestions.update_one(
+            {"id": suggestion_id, "user_id": current_user.id},
+            {"$set": {"is_dismissed": True}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Suggestion not found")
+        
+        return APIResponse(
+            success=True,
+            message="Suggestion dismissed successfully",
+            data={"dismissed": True}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error dismissing suggestion: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to dismiss suggestion")
+
+@api_router.get("/ai/memory/context", response_model=APIResponse)
+async def get_user_memory_context(
+    current_user: User = Depends(get_current_user),
+    session_id: Optional[str] = None
+):
+    """Get user's memory context for AI conversations"""
+    try:
+        query = {"user_id": current_user.id}
+        if session_id:
+            query["session_id"] = session_id
+        
+        memory_contexts = await db.user_memory_contexts.find(query).sort(
+            "importance_score", -1
+        ).to_list(20)
+        
+        # Update last_referenced for retrieved contexts
+        if memory_contexts:
+            context_ids = [ctx["id"] for ctx in memory_contexts]
+            await db.user_memory_contexts.update_many(
+                {"id": {"$in": context_ids}},
+                {
+                    "$set": {"last_referenced": datetime.utcnow()},
+                    "$inc": {"reference_count": 1}
+                }
+            )
+        
+        return APIResponse(
+            success=True,
+            message="Memory context retrieved successfully",
+            data={"contexts": memory_contexts}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error retrieving memory context: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve memory context")
+
+@api_router.post("/ai/memory/context", response_model=APIResponse)
+async def store_memory_context(
+    context_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Store new memory context from AI conversation"""
+    try:
+        context = UserMemoryContext(
+            user_id=current_user.id,
+            session_id=context_data.get("session_id", ""),
+            context_type=context_data.get("context_type", "legal_concept"),
+            context_key=context_data.get("context_key", ""),
+            context_value=context_data.get("context_value", ""),
+            importance_score=context_data.get("importance_score", 0.5)
+        )
+        
+        await db.user_memory_contexts.insert_one(context.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Memory context stored successfully",
+            data={"stored": True}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error storing memory context: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to store memory context")
+
+async def generate_protection_suggestions(user_id: str, protection_profile: dict, learning_patterns: list) -> list:
+    """Generate protection-based suggestions"""
+    suggestions = []
+    
+    # Get available protections user hasn't unlocked
+    unlocked_protections = await db.unlocked_protections.find({"user_id": user_id}).to_list(100)
+    unlocked_ids = [p["protection_id"] for p in unlocked_protections]
+    
+    available_protections = await db.regional_protections.find(
+        {"id": {"$nin": unlocked_ids}}
+    ).to_list(20)
+    
+    # Find most relevant protections based on user's protection type
+    user_protection_type = protection_profile.get("protection_type", "GENERAL")
+    
+    for protection in available_protections:
+        if protection["protection_type"] == user_protection_type:
+            suggestions.append({
+                "suggestion_type": "protection",
+                "title": f"Unlock: {protection['statute_title']}",
+                "description": protection["protection_description"],
+                "content_id": protection["id"],
+                "relevance_score": 0.8,
+                "reasoning": f"Relevant to your {user_protection_type} protection profile",
+                "category": "legal_protection",
+                "priority_level": 2
+            })
+    
+    return suggestions[:3]  # Limit to top 3
+
+async def generate_learning_path_suggestions(user_id: str, learning_patterns: list) -> list:
+    """Generate learning path suggestions"""
+    suggestions = []
+    
+    # Get learning paths user hasn't completed
+    user_paths = await db.user_learning_paths.find({"user_id": user_id}).to_list(100)
+    completed_paths = [p["path_id"] for p in user_paths if p.get("is_completed", False)]
+    
+    available_paths = await db.learning_paths.find(
+        {"id": {"$nin": completed_paths}}
+    ).to_list(10)
+    
+    # Find patterns in user's topics of interest
+    topic_counts = {}
+    for pattern in learning_patterns:
+        topic = pattern.get("topic_category", "general")
+        topic_counts[topic] = topic_counts.get(topic, 0) + pattern.get("frequency_count", 1)
+    
+    # Match paths to user's interests
+    for path in available_paths:
+        path_category = path.get("category", "general")
+        relevance = topic_counts.get(path_category, 0) / max(sum(topic_counts.values()), 1)
+        
+        if relevance > 0.2:  # Only suggest if there's some relevance
+            suggestions.append({
+                "suggestion_type": "learning_path",
+                "title": f"Learn: {path['title']}",
+                "description": path["description"],
+                "content_id": path["id"],
+                "relevance_score": min(relevance, 1.0),
+                "reasoning": f"Based on your interest in {path_category}",
+                "category": "education",
+                "priority_level": 1
+            })
+    
+    return suggestions[:2]  # Limit to top 2
+
+async def generate_myth_suggestions(user_id: str, learning_patterns: list) -> list:
+    """Generate myth-busting suggestions"""
+    suggestions = []
+    
+    # Get myths user hasn't read
+    user_myths = await db.user_myth_progress.find({"user_id": user_id}).to_list(100)
+    read_myths = [m["myth_id"] for m in user_myths]
+    
+    available_myths = await db.legal_myths.find(
+        {"id": {"$nin": read_myths}}
+    ).to_list(10)
+    
+    # Find topic patterns
+    topic_interests = {}
+    for pattern in learning_patterns:
+        topic = pattern.get("topic_category", "general")
+        topic_interests[topic] = topic_interests.get(topic, 0) + pattern.get("engagement_level", 0.5)
+    
+    # Match myths to interests
+    for myth in available_myths:
+        myth_category = myth.get("category", "general")
+        relevance = topic_interests.get(myth_category, 0)
+        
+        if relevance > 0.3:  # Only suggest if there's reasonable relevance
+            suggestions.append({
+                "suggestion_type": "myth",
+                "title": f"Myth: {myth['title']}",
+                "description": myth.get("description", myth["myth_statement"]),
+                "content_id": myth["id"],
+                "relevance_score": min(relevance, 1.0),
+                "reasoning": f"You've shown interest in {myth_category}",
+                "category": "myth_busting",
+                "priority_level": 1
+            })
+    
+    return suggestions[:2]  # Limit to top 2
+
 # Emergency SOS endpoints - Critical safety features
 @api_router.post("/emergency/contacts", response_model=APIResponse)
 async def create_emergency_contact(contact_data: EmergencyContactCreate, current_user: User = Depends(get_current_user)):
