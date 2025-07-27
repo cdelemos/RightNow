@@ -21,7 +21,7 @@ const Register = () => {
   const userTypes = [
     { value: 'undergraduate', label: 'Undergraduate Student', icon: '🎓', color: 'bg-blue-100 text-blue-700' },
     { value: 'graduate', label: 'Graduate Student', icon: '📚', color: 'bg-purple-100 text-purple-700' },
-    { value: 'law_student', label: 'Law Student', icon: '⚖️', color: 'bg-sage-100 text-sage-700' },
+    { value: 'law_student', label: 'Law Student', icon: '⚖️', color: 'bg-forest-100 text-forest-700' },
     { value: 'professor', label: 'Professor/Educator', icon: '👨‍🏫', color: 'bg-emerald-100 text-emerald-700' },
     { value: 'general', label: 'General Public', icon: '👤', color: 'bg-gray-100 text-gray-700' }
   ];
