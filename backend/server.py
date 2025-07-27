@@ -56,6 +56,19 @@ api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
 # Helper functions
+def clean_mongo_document(doc):
+    """Convert MongoDB document to JSON-serializable format"""
+    if isinstance(doc, dict):
+        return {k: clean_mongo_document(v) for k, v in doc.items() if k != '_id'}
+    elif isinstance(doc, list):
+        return [clean_mongo_document(item) for item in doc]
+    elif isinstance(doc, ObjectId):
+        return str(doc)
+    elif isinstance(doc, datetime):
+        return doc.isoformat()
+    else:
+        return doc
+
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
