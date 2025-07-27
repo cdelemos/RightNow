@@ -1036,6 +1036,7 @@ const ProgressView = ({ userProgress, pathTypeLabels }) => {
           <div className="grid md:grid-cols-2 gap-6">
             {inProgressPaths.map((progress) => {
               const pathTypeInfo = pathTypeLabels[progress.path_type] || { label: progress.path_type, emoji: '📚', color: 'gray' };
+              const colorClasses = getPathTypeColorClasses(progress.path_type);
               return (
                 <div key={progress.learning_path_id} className="bg-white rounded-2xl shadow-sage border border-sage-100 p-6">
                   <div className="flex items-center space-x-4 mb-4">
@@ -1049,7 +1050,7 @@ const ProgressView = ({ userProgress, pathTypeLabels }) => {
                   </div>
                   <div className="w-full bg-sage-200 rounded-full h-3">
                     <div 
-                      className={`bg-gradient-to-r from-${pathTypeInfo.color}-400 to-${pathTypeInfo.color}-500 h-3 rounded-full transition-all duration-500`}
+                      className={`bg-gradient-to-r ${colorClasses.progressGradient} h-3 rounded-full transition-all duration-500`}
                       style={{ width: `${progress.progress_percentage}%` }}
                     ></div>
                   </div>
