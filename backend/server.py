@@ -2857,6 +2857,240 @@ async def create_or_update_protection_profile(
         logging.error(f"Error creating/updating protection profile: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to save protection profile")
 
+# Personalized learning content endpoints
+@api_router.get("/learning/paths", response_model=APIResponse)
+async def get_learning_paths_filtered(
+    protection_type: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get learning paths filtered by protection type"""
+    try:
+        query = {}
+        
+        # Filter by protection type if provided
+        if protection_type:
+            # Map protection types to relevant target audiences and types
+            protection_mapping = {
+                "RENTER": {"target_audience": ["undergraduate", "general"], "path_type": ["tenant_rights", "housing_law"]},
+                "WORKER": {"target_audience": ["undergraduate", "general"], "path_type": ["employment_rights", "labor_law"]},
+                "STUDENT": {"target_audience": ["undergraduate", "law_student"], "path_type": ["student_rights", "education_law"]},
+                "UNDOCUMENTED": {"target_audience": ["general"], "path_type": ["immigration_rights", "civil_rights"]},
+                "PROTESTER": {"target_audience": ["general"], "path_type": ["civil_rights", "constitutional_law"]},
+                "DISABLED": {"target_audience": ["general"], "path_type": ["civil_rights", "disability_rights"]},
+                "GENERAL": {}  # No filtering for general
+            }
+            
+            mapping = protection_mapping.get(protection_type.upper(), {})
+            if mapping:
+                filter_conditions = []
+                if "target_audience" in mapping:
+                    filter_conditions.append({"target_audience": {"$in": mapping["target_audience"]}})
+                if "path_type" in mapping:
+                    filter_conditions.append({"path_type": {"$in": mapping["path_type"]}})
+                
+                if filter_conditions:
+                    query["$or"] = filter_conditions
+        
+        # Get learning paths
+        learning_paths = await db.learning_paths.find(query).to_list(100)
+        
+        # Enrich with user progress data
+        enriched_paths = []
+        for path in learning_paths:
+            path_dict = dict(path)
+            
+            # Get user progress for this path
+            user_progress = await db.user_learning_progress.find_one({
+                "user_id": current_user.id,
+                "path_id": path_dict.get("id")
+            })
+            
+            if user_progress:
+                path_dict["user_progress"] = {
+                    "completed_nodes": user_progress.get("completed_nodes", []),
+                    "current_node": user_progress.get("current_node"),
+                    "completion_percentage": user_progress.get("completion_percentage", 0),
+                    "started_at": user_progress.get("started_at"),
+                    "last_activity": user_progress.get("last_activity")
+                }
+            else:
+                path_dict["user_progress"] = {
+                    "completed_nodes": [],
+                    "current_node": None,
+                    "completion_percentage": 0,
+                    "started_at": None,
+                    "last_activity": None
+                }
+            
+            enriched_paths.append(path_dict)
+        
+        return APIResponse(
+            success=True,
+            message="Learning paths retrieved successfully",
+            data=enriched_paths
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting learning paths: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve learning paths")
+
+@api_router.get("/statutes/search", response_model=APIResponse)
+async def search_statutes_filtered(
+    protection_type: Optional[str] = None,
+    state: Optional[str] = None,
+    category: Optional[StatuteCategory] = None,
+    search: Optional[str] = None,
+    page: int = 1,
+    per_page: int = 20,
+    current_user: User = Depends(get_current_user)
+):
+    """Search statutes with protection type filtering"""
+    try:
+        query = {}
+        
+        # Add existing filters
+        if state:
+            query["state"] = state
+        if category:
+            query["category"] = category.value
+        if search:
+            query["$or"] = [
+                {"title": {"$regex": search, "$options": "i"}},
+                {"summary": {"$regex": search, "$options": "i"}},
+                {"keywords": {"$regex": search, "$options": "i"}}
+            ]
+        
+        # Filter by protection type if provided
+        if protection_type:
+            protection_category_mapping = {
+                "RENTER": ["housing", "contracts"],
+                "WORKER": ["employment", "contracts"],
+                "STUDENT": ["education", "civil_rights"],
+                "UNDOCUMENTED": ["civil_rights"],
+                "PROTESTER": ["civil_rights", "criminal_law"],
+                "DISABLED": ["civil_rights", "education"],
+                "GENERAL": None  # No filtering for general
+            }
+            
+            relevant_categories = protection_category_mapping.get(protection_type.upper())
+            if relevant_categories:
+                if "category" in query:
+                    # If category already specified, ensure it's in relevant categories
+                    if query["category"] not in relevant_categories:
+                        query["category"] = {"$in": relevant_categories}
+                else:
+                    query["category"] = {"$in": relevant_categories}
+        
+        # Count total results
+        total = await db.legal_statutes.count_documents(query)
+        
+        # Get paginated results
+        skip = (page - 1) * per_page
+        statutes = await db.legal_statutes.find(query).sort("created_at", -1).skip(skip).limit(per_page).to_list(per_page)
+        
+        # Convert to statute objects
+        statute_list = []
+        for statute in statutes:
+            statute_obj = LegalStatute(**statute)
+            statute_list.append(statute_obj.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Statutes retrieved successfully",
+            data={
+                "statutes": statute_list,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": (total + per_page - 1) // per_page
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error searching statutes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search statutes")
+
+@api_router.get("/simulations/list", response_model=APIResponse) 
+async def get_simulations_filtered(
+    protection_type: Optional[str] = None,
+    category: Optional[SimulationCategory] = None,
+    difficulty: Optional[DifficultyLevel] = None,
+    page: int = 1,
+    per_page: int = 20,
+    current_user: User = Depends(get_current_user)
+):
+    """Get simulations with protection type filtering"""
+    try:
+        query = {}
+        
+        # Add existing filters
+        if category:
+            query["category"] = category.value
+        if difficulty:
+            query["difficulty_level"] = difficulty.value
+        
+        # Filter by protection type if provided
+        if protection_type:
+            protection_category_mapping = {
+                "RENTER": ["housing_dispute", "tenant_rights"],
+                "WORKER": ["workplace_harassment", "employment_dispute"],
+                "STUDENT": ["campus_incident", "academic_dispute"],
+                "UNDOCUMENTED": ["ice_encounter", "document_check"],
+                "PROTESTER": ["police_encounter", "protest_rights"],
+                "DISABLED": ["accessibility_issue", "discrimination"],
+                "GENERAL": None  # No filtering for general
+            }
+            
+            relevant_categories = protection_category_mapping.get(protection_type.upper())
+            if relevant_categories:
+                if "category" in query:
+                    # If category already specified, ensure it's in relevant categories
+                    current_category = query["category"]
+                    if current_category not in relevant_categories:
+                        query["category"] = {"$in": relevant_categories}
+                else:
+                    query["category"] = {"$in": relevant_categories}
+        
+        # Count total results
+        total = await db.simulations.count_documents(query)
+        
+        # Get paginated results
+        skip = (page - 1) * per_page
+        simulations = await db.simulations.find(query).skip(skip).limit(per_page).to_list(per_page)
+        
+        # Enrich with user progress
+        enriched_sims = []
+        for sim in simulations:
+            sim_dict = dict(sim)
+            
+            # Get user completion status
+            user_progress = await db.simulation_progress.find_one({
+                "user_id": current_user.id,
+                "scenario_id": sim_dict.get("id"),
+                "completed": True
+            })
+            
+            sim_dict["user_completed"] = bool(user_progress)
+            sim_dict["user_score"] = user_progress.get("score", 0) if user_progress else 0
+            
+            enriched_sims.append(sim_dict)
+        
+        return APIResponse(
+            success=True,
+            message="Simulations retrieved successfully", 
+            data={
+                "simulations": enriched_sims,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": (total + per_page - 1) // per_page
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting simulations: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve simulations")
+
 # AI Memory & Suggestion Engine endpoints
 @api_router.post("/ai/memory/track", response_model=APIResponse)
 async def track_user_interaction(
