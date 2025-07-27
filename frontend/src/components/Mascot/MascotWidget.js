@@ -238,11 +238,14 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
         
         {/* Mood indicator */}
         <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${
-          mascotState.mood === 'happy' ? 'bg-green-400' :
-          mascotState.mood === 'excited' ? 'bg-yellow-400' :
-          mascotState.mood === 'encouraging' ? 'bg-blue-400' :
-          mascotState.mood === 'proud' ? 'bg-purple-400' :
-          mascotState.mood === 'celebratory' ? 'bg-pink-400' :
+          mascotState.mood === 'protective' ? 'bg-blue-500' :
+          mascotState.mood === 'clear' ? 'bg-cyan-400' :
+          mascotState.mood === 'empowering' ? 'bg-green-500' :
+          mascotState.mood === 'serious' ? 'bg-red-500' :
+          mascotState.mood === 'focused' ? 'bg-purple-500' :
+          mascotState.mood === 'alert' ? 'bg-orange-500' :
+          mascotState.mood === 'supportive' ? 'bg-teal-500' :
+          mascotState.mood === 'vigilant' ? 'bg-brown-500' :
           'bg-gray-400'
         }`}></div>
         
