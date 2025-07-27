@@ -206,7 +206,7 @@ const Register = () => {
                   type="password"
                   autoComplete="new-password"
                   required
-                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  className="w-full px-4 py-3 border border-forest-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent transition-all duration-200 bg-forest-50/50"
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
@@ -227,7 +227,7 @@ const Register = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-white font-medium rounded-xl bg-gradient-to-r from-sage-500 to-sage-600 hover:from-sage-600 hover:to-sage-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sage-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 shadow-sage"
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-white font-medium rounded-xl bg-gradient-to-r from-forest-600 to-forest-700 hover:from-forest-700 hover:to-forest-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-forest-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 shadow-lg shadow-forest-200/50"
               >
                 {loading ? (
                   <div className="flex items-center">
@@ -246,7 +246,7 @@ const Register = () => {
             <div className="text-center">
               <Link
                 to="/login"
-                className="font-medium text-sage-600 hover:text-sage-500 transition-colors duration-200"
+                className="font-medium text-forest-600 hover:text-forest-500 transition-colors duration-200"
               >
                 Already have an account? <span className="text-sage-700 font-semibold">Sign in!</span> 👋
               </Link>
