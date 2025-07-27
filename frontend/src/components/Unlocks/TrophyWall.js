@@ -7,6 +7,7 @@ import axios from 'axios';
 const TrophyWall = () => {
   const { user } = useAuth();
   const { userStats, levelProgress, refreshGamificationData } = useGamification();
+  const { showUnlockNotification } = useUnlock();
   const [trophyData, setTrophyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
