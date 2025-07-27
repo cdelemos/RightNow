@@ -384,6 +384,10 @@ const EmergencySOS = () => {
         isOpen={showCompassRose} 
         onClose={() => setShowCompassRose(false)} 
       />
+      <SOSTray 
+        isOpen={showSOSTray} 
+        onClose={() => setShowSOSTray(false)} 
+      />
     </>
   );
 };
