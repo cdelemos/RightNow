@@ -118,7 +118,7 @@ const GamificationDashboard = () => {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div 
-              className="bg-gradient-to-r from-sage-500 to-green-500 h-3 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-gold-400 to-gold-600 h-3 rounded-full transition-all duration-300"
               style={{ width: `${levelProgress?.progress_percentage || 0}%` }}
             />
           </div>
