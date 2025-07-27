@@ -88,121 +88,126 @@ const PublicAccessRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <GamificationProvider>
-        <UnlockProvider>
-          <div className="App">
-            <BrowserRouter>
-              <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              } />
-              <Route path="/register" element={
-                <PublicRoute>
-                  <Register />
-                </PublicRoute>
-              } />
-              
-              {/* Public About Us page - no authentication required */}
-              <Route path="/about" element={<AboutUs />} />
-              
-              {/* Protected routes wrapped in BookContainer */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <DailyLearning />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/statutes" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <StatuteLookup />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/questions" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <CommunityQA />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/myths" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <MythFeed />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/simulations" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <SimulationPlayer />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/learning-paths" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <LearningPaths />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/ai-chat" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <AIChat />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/emergency-contacts" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <EmergencyContacts />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/gamification" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <GamificationDashboard />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              <Route path="/trophy-wall" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <TrophyWall />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
-              
-              {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/dashboard" />} />
-            </Routes>
-            
-            {/* Always-visible widgets when authenticated */}
-            <ProtectedRoute>
-              <EmergencySOS />
-            </ProtectedRoute>
-            
-            <ProtectedRoute>
-              <GamificationWidget position="top-right" />
-            </ProtectedRoute>
-            
-            <ProtectedRoute>
-              <MascotWidget position="bottom-left" />
-            </ProtectedRoute>
-          </BrowserRouter>
-        </div>
-      </UnlockProvider>
-    </GamificationProvider>
-  </AuthProvider>
-);
+    <div className="App">
+      <BrowserRouter>
+        <Routes>
+          {/* Public About Us page - outside AuthProvider to avoid auth checks */}
+          <Route path="/about" element={<AboutUs />} />
+          
+          {/* All other routes wrapped in AuthProvider */}
+          <Route path="/*" element={
+            <AuthProvider>
+              <GamificationProvider>
+                <UnlockProvider>
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/login" element={
+                      <PublicRoute>
+                        <Login />
+                      </PublicRoute>
+                    } />
+                    <Route path="/register" element={
+                      <PublicRoute>
+                        <Register />
+                      </PublicRoute>
+                    } />
+                    
+                    {/* Protected routes wrapped in BookContainer */}
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <DailyLearning />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/statutes" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <StatuteLookup />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/questions" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <CommunityQA />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/myths" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <MythFeed />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/simulations" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <SimulationPlayer />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/learning-paths" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <LearningPaths />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/ai-chat" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <AIChat />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/emergency-contacts" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <EmergencyContacts />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/gamification" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <GamificationDashboard />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/trophy-wall" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <TrophyWall />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
+                    
+                    {/* Default redirect */}
+                    <Route path="/" element={<Navigate to="/dashboard" />} />
+                  </Routes>
+                  
+                  {/* Always-visible widgets when authenticated */}
+                  <ProtectedRoute>
+                    <EmergencySOS />
+                  </ProtectedRoute>
+                  
+                  <ProtectedRoute>
+                    <GamificationWidget position="top-right" />
+                  </ProtectedRoute>
+                  
+                  <ProtectedRoute>
+                    <MascotWidget position="bottom-left" />
+                  </ProtectedRoute>
+                </UnlockProvider>
+              </GamificationProvider>
+            </AuthProvider>
+          } />
+        </Routes>
+      </BrowserRouter>
+    </div>
+  );
 }
 
 export default App;
