@@ -2963,6 +2963,7 @@ async def generate_protection_suggestions(user_id: str, protection_profile: dict
     for protection in available_protections:
         if protection["protection_type"] == user_protection_type:
             suggestions.append({
+                "user_id": user_id,
                 "suggestion_type": "protection",
                 "title": f"Unlock: {protection['statute_title']}",
                 "description": protection["protection_description"],
