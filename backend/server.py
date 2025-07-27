@@ -2927,8 +2927,284 @@ async def initialize_legal_simulations():
         )
         created_scenarios.append(scenario)
     
-    await db.simulation_scenarios.insert_many([scenario.dict() for scenario in created_scenarios])
     logging.info(f"Initialized {len(created_scenarios)} legal simulation scenarios")
+
+# Helper functions for Advanced Learning Paths
+def calculate_path_relevance(path: LearningPath, user_prefs: Dict[str, Any]) -> float:
+    """Calculate relevance score for a learning path based on user preferences"""
+    score = 0.0
+    
+    # Primary interests match
+    if path.path_type.value in [interest.value if hasattr(interest, 'value') else interest for interest in user_prefs.get('primary_interests', [])]:
+        score += 0.4
+    
+    # User situation match
+    user_situations = user_prefs.get('user_situation', [])
+    if any(situation in path.tags for situation in user_situations):
+        score += 0.3
+    
+    # Difficulty preference
+    preferred_difficulty = user_prefs.get('preferred_difficulty', 2)
+    difficulty_diff = abs(path.difficulty_level - preferred_difficulty)
+    score += 0.2 * (1 - difficulty_diff / 4)  # Normalize to 0-1
+    
+    # Learning style preference (simplified)
+    learning_style = user_prefs.get('learning_style', 'balanced')
+    if learning_style == 'interactive' and 'simulation' in path.tags:
+        score += 0.1
+    elif learning_style == 'visual' and 'visual' in path.tags:
+        score += 0.1
+    
+    return min(1.0, max(0.0, score))
+
+def get_personalization_reason(path: LearningPath, user_prefs: Dict[str, Any]) -> str:
+    """Generate explanation for why this path is recommended"""
+    reasons = []
+    
+    # Check primary interests
+    primary_interests = user_prefs.get('primary_interests', [])
+    for interest in primary_interests:
+        interest_value = interest.value if hasattr(interest, 'value') else interest
+        if path.path_type.value == interest_value:
+            interest_labels = {
+                'tenant_protection': 'tenant rights',
+                'immigration_rights': 'immigration law',
+                'student_rights': 'student protections',
+                'criminal_defense': 'criminal law',
+                'employment_rights': 'workplace rights',
+                'consumer_protection': 'consumer law',
+                'protest_rights': 'protest law',
+                'family_law': 'family law',
+                'general_legal_literacy': 'general legal knowledge'
+            }
+            reasons.append(f"Matches your interest in {interest_labels.get(interest_value, interest_value)}")
+    
+    # Check user situation
+    user_situations = user_prefs.get('user_situation', [])
+    matching_situations = [situation for situation in user_situations if situation in path.tags]
+    if matching_situations:
+        reasons.append(f"Relevant to your situation as a {', '.join(matching_situations)}")
+    
+    # Check difficulty
+    preferred_difficulty = user_prefs.get('preferred_difficulty', 2)
+    if abs(path.difficulty_level - preferred_difficulty) <= 1:
+        reasons.append(f"Matches your preferred difficulty level")
+    
+    return ' • '.join(reasons) if reasons else "Recommended based on your profile"
+
+async def check_prerequisites_met(user_id: str, prerequisite_path_ids: List[str]) -> bool:
+    """Check if user has completed prerequisite learning paths"""
+    if not prerequisite_path_ids:
+        return True
+    
+    completed_paths = await db.user_learning_progress.find({
+        "user_id": user_id,
+        "learning_path_id": {"$in": prerequisite_path_ids},
+        "is_completed": True
+    }).to_list(len(prerequisite_path_ids))
+    
+    return len(completed_paths) == len(prerequisite_path_ids)
+
+async def get_node_with_unlock_status(node_id: str, learning_path: LearningPath, user_id: str) -> Dict[str, Any]:
+    """Get a learning node with its unlock status"""
+    node = next((n for n in learning_path.path_nodes if n.id == node_id), None)
+    if not node:
+        return {}
+    
+    user_progress = await db.user_learning_progress.find_one({
+        "user_id": user_id,
+        "learning_path_id": learning_path.id
+    })
+    
+    node_dict = node.dict()
+    node_dict["is_unlocked"] = await is_node_unlocked(node, user_progress, user_id)
+    node_dict["is_completed"] = node.id in (user_progress.get("completed_nodes", []) if user_progress else [])
+    
+    return node_dict
+
+async def is_node_unlocked(node: LearningPathNode, user_progress: Optional[Dict[str, Any]], user_id: str) -> bool:
+    """Check if a learning node is unlocked for the user"""
+    if not user_progress:
+        # Only start node is unlocked without progress
+        return node.xp_required == 0
+    
+    # Get user's current XP
+    user = await db.users.find_one({"id": user_id})
+    user_xp = user.get("xp", 0) if user else 0
+    
+    # Check XP requirement
+    if node.xp_required > user_xp:
+        return False
+    
+    # Check node prerequisites
+    if node.prerequisites:
+        completed_nodes = user_progress.get("completed_nodes", [])
+        return all(prereq_id in completed_nodes for prereq_id in node.prerequisites)
+    
+    return True
+
+async def validate_completion_criteria(criteria: Dict[str, Any], completion_data: Dict[str, Any], user_id: str) -> bool:
+    """Validate if completion criteria are met"""
+    # This would contain logic specific to different completion criteria
+    # For now, basic implementation
+    if "required_fields" in criteria:
+        required_fields = criteria["required_fields"]
+        return all(field in completion_data for field in required_fields)
+    
+    return True
+
+async def get_general_recommendations(limit: int) -> List[Dict[str, Any]]:
+    """Get general recommendations for users without personalization"""
+    recommendations = []
+    
+    # Recommend popular learning paths
+    paths = await db.learning_paths.find({"is_active": True}).limit(limit // 2).to_list(limit // 2)
+    for path in paths:
+        recommendations.append({
+            "content_type": "learning_path",
+            "content_id": path["id"],
+            "title": path["title"],
+            "description": path["description"],
+            "confidence_score": 0.7,
+            "reason": "Popular learning path for beginners",
+            "estimated_time": path["estimated_duration"],
+            "xp_potential": path.get("total_xp_reward", 100)
+        })
+    
+    # Recommend recent myths
+    myths = await db.legal_myths.find({"status": "published"}).sort("published_at", -1).limit(limit // 2).to_list(limit // 2)
+    for myth in myths:
+        recommendations.append({
+            "content_type": "myth",
+            "content_id": myth["id"],
+            "title": myth["title"],
+            "description": myth["myth_statement"][:100] + "...",
+            "confidence_score": 0.6,
+            "reason": "Recent legal myth to explore",
+            "estimated_time": 3,
+            "xp_potential": 15
+        })
+    
+    return recommendations
+
+async def recommend_learning_paths(user_prefs: Dict[str, Any], user_id: str, limit: int) -> List[Dict[str, Any]]:
+    """Recommend learning paths based on user preferences"""
+    recommendations = []
+    
+    # Get all active learning paths
+    paths = await db.learning_paths.find({"is_active": True}).to_list(100)
+    
+    # Calculate relevance scores
+    scored_paths = []
+    for path in paths:
+        path_obj = LearningPath(**path)
+        relevance = calculate_path_relevance(path_obj, user_prefs)
+        if relevance > 0.3:  # Only recommend paths with decent relevance
+            scored_paths.append((path_obj, relevance))
+    
+    # Sort by relevance and take top recommendations
+    scored_paths.sort(key=lambda x: x[1], reverse=True)
+    
+    for path_obj, score in scored_paths[:limit]:
+        recommendations.append({
+            "content_type": "learning_path",
+            "content_id": path_obj.id,
+            "title": path_obj.title,
+            "description": path_obj.description,
+            "confidence_score": score,
+            "reason": get_personalization_reason(path_obj, user_prefs),
+            "estimated_time": path_obj.estimated_duration,
+            "xp_potential": path_obj.total_xp_reward
+        })
+    
+    return recommendations
+
+async def recommend_myths(user_prefs: Dict[str, Any], user_id: str, limit: int) -> List[Dict[str, Any]]:
+    """Recommend myths based on user preferences"""
+    recommendations = []
+    
+    # Get user's primary interests
+    primary_interests = user_prefs.get('primary_interests', [])
+    
+    # Convert interests to categories
+    interest_to_category = {
+        'tenant_protection': 'housing',
+        'immigration_rights': 'civil_rights',
+        'student_rights': 'education',
+        'criminal_defense': 'criminal_law',
+        'employment_rights': 'employment',
+        'consumer_protection': 'consumer_protection',
+        'protest_rights': 'civil_rights',
+        'family_law': 'family_law'
+    }
+    
+    relevant_categories = []
+    for interest in primary_interests:
+        interest_str = interest.value if hasattr(interest, 'value') else str(interest)
+        if interest_str in interest_to_category:
+            relevant_categories.append(interest_to_category[interest_str])
+    
+    # Get myths from relevant categories
+    query = {"status": "published"}
+    if relevant_categories:
+        query["category"] = {"$in": relevant_categories}
+    
+    myths = await db.legal_myths.find(query).limit(limit).to_list(limit)
+    
+    for myth in myths:
+        confidence = 0.8 if myth["category"] in relevant_categories else 0.5
+        recommendations.append({
+            "content_type": "myth",
+            "content_id": myth["id"],
+            "title": myth["title"],
+            "description": myth["myth_statement"][:100] + "...",
+            "confidence_score": confidence,
+            "reason": f"Relevant to your interest in {myth['category'].replace('_', ' ')}",
+            "estimated_time": 3,
+            "xp_potential": 15
+        })
+    
+    return recommendations
+
+async def recommend_simulations(user_prefs: Dict[str, Any], user_id: str, limit: int) -> List[Dict[str, Any]]:
+    """Recommend simulations based on user preferences"""
+    recommendations = []
+    
+    # Get user's situation and interests
+    user_situations = user_prefs.get('user_situation', [])
+    primary_interests = user_prefs.get('primary_interests', [])
+    
+    # Map interests to simulation categories
+    interest_to_sim_category = {
+        'tenant_protection': 'housing_dispute',
+        'immigration_rights': 'police_encounter',
+        'criminal_defense': 'traffic_stop',
+        'student_rights': 'police_encounter'
+    }
+    
+    relevant_sim_categories = []
+    for interest in primary_interests:
+        interest_str = interest.value if hasattr(interest, 'value') else str(interest)
+        if interest_str in interest_to_sim_category:
+            relevant_sim_categories.append(interest_to_sim_category[interest_str])
+    
+    # Get simulations
+    simulations = await db.simulation_scenarios.find({"is_active": True}).limit(limit).to_list(limit)
+    
+    for sim in simulations:
+        confidence = 0.7 if sim["category"] in relevant_sim_categories else 0.4
+        recommendations.append({
+            "content_type": "simulation",
+            "content_id": sim["id"],
+            "title": sim["title"],
+            "description": sim["description"],
+            "confidence_score": confidence,
+            "reason": f"Practice scenario relevant to your interests",
+            "estimated_time": sim["estimated_duration"],
+            "xp_potential": 50
+        })
+    
+    return recommendations
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
