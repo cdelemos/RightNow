@@ -2838,7 +2838,7 @@ async def get_personalized_suggestions(
         ))
         
         # Sort by relevance score and limit results
-        suggestions.sort(key=lambda x: x.relevance_score, reverse=True)
+        suggestions.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
         suggestions = suggestions[:limit]
         
         # Store suggestions in database
