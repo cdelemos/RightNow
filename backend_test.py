@@ -4420,6 +4420,28 @@ class BackendTester:
             self.log_test("Empty Context Handling", True, "Handled empty context gracefully")
         else:
             self.log_test("Empty Context Handling", True, "Correctly rejected empty context")
+    
+    def print_test_summary(self):
+        """Print comprehensive test summary"""
+        print("\n" + "=" * 70)
+        print("📊 TEST SUMMARY")
+        print("=" * 70)
+        
+        passed = sum(1 for result in self.test_results if result["success"])
+        failed = len(self.test_results) - passed
+        
+        print(f"Total Tests: {len(self.test_results)}")
+        print(f"✅ Passed: {passed}")
+        print(f"❌ Failed: {failed}")
+        print(f"Success Rate: {(passed/len(self.test_results)*100):.1f}%")
+        
+        if failed > 0:
+            print("\n🔍 FAILED TESTS:")
+            for result in self.test_results:
+                if not result["success"]:
+                    print(f"  • {result['test']}: {result['message']}")
+        
+        return passed, failed
 
 if __name__ == "__main__":
     tester = BackendTester()
