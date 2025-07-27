@@ -67,8 +67,9 @@ const PublicRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <div className="App">
-        <BrowserRouter>
+      <GamificationProvider>
+        <div className="App">
+          <BrowserRouter>
           <Navbar />
           <Routes>
             {/* Public routes */}
