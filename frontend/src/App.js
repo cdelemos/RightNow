@@ -130,9 +130,9 @@ function App() {
                 <SimulationPlayer />
               </ProtectedRoute>
             } />
-            <Route path="/learning" element={
+            <Route path="/learning-paths" element={
               <ProtectedRoute>
-                <LearningPage />
+                <LearningPaths />
               </ProtectedRoute>
             } />
             <Route path="/ai-chat" element={
