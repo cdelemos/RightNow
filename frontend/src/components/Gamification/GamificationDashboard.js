@@ -371,8 +371,8 @@ const GamificationDashboard = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-sage-600 text-white'
-                      : 'text-gray-600 hover:text-sage-600'
+                      ? 'bg-forest-600 text-white'
+                      : 'text-forest-600 hover:text-forest-700'
                   }`}
                 >
                   <span>{tab.icon}</span>
