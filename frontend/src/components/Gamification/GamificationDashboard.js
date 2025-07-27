@@ -125,23 +125,23 @@ const GamificationDashboard = () => {
         </div>
         
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="p-3 bg-sage-50 rounded-lg">
-            <div className="text-2xl font-bold text-sage-600">
+          <div className="p-3 bg-gold-50 rounded-lg">
+            <div className="text-2xl font-bold text-gold-600">
               {formatXP(user?.xp || 0)}
             </div>
-            <div className="text-sm text-gray-600">Total XP</div>
+            <div className="text-sm text-forest-600">Total XP</div>
           </div>
           <div className="p-3 bg-yellow-50 rounded-lg">
             <div className="text-2xl font-bold text-yellow-600">
               {badges?.length || 0}
             </div>
-            <div className="text-sm text-gray-600">Badges</div>
+            <div className="text-sm text-forest-600">Badges</div>
           </div>
           <div className="p-3 bg-blue-50 rounded-lg">
             <div className="text-2xl font-bold text-blue-600">
               {achievements?.filter(a => a.is_completed).length || 0}
             </div>
-            <div className="text-sm text-gray-600">Achievements</div>
+            <div className="text-sm text-forest-600">Achievements</div>
           </div>
         </div>
       </div>
