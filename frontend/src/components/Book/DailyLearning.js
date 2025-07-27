@@ -85,17 +85,6 @@ const DailyLearning = () => {
           📖 Daily Learning
         </h1>
         <div className="w-12 h-0.5 bg-gradient-to-r from-gold-400 to-gold-600 mx-auto rounded-full animate-gold-glow"></div>
-        
-        {/* Achievement Stickers - Compact */}
-        <div className="mt-3 flex items-center justify-center space-x-2">
-          <AchievementStickers />
-          <button
-            onClick={() => setShowAchievements(true)}
-            className="text-forest-600 hover:text-forest-800 text-xs"
-          >
-            View All →
-          </button>
-        </div>
       </div>
 
       {/* Progress Ribbon - Compact */}
@@ -248,11 +237,6 @@ const DailyLearning = () => {
             Practice Scenarios
           </button>
         </div>
-      </div>
-
-      {/* Margin Scribbles - Positioned better */}
-      <div className="absolute top-1/2 -right-4 transform -translate-y-1/2">
-        <MarginScribbles position="right" context="general" />
       </div>
 
       {/* Modals */}
