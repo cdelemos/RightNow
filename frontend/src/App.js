@@ -145,6 +145,11 @@ function App() {
           <ProtectedRoute>
             <GamificationWidget position="top-right" />
           </ProtectedRoute>
+          
+          {/* Mascot Widget - Always available when authenticated */}
+          <ProtectedRoute>
+            <MascotWidget position="bottom-left" />
+          </ProtectedRoute>
         </BrowserRouter>
       </div>
     </GamificationProvider>
