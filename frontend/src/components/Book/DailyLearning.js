@@ -76,20 +76,31 @@ const DailyLearning = () => {
   }
 
   return (
-    <div className="h-full p-8 overflow-y-auto">
+    <div className="h-full p-8 overflow-y-auto book-texture">
       {/* Header with Date and Welcome */}
       <div className="text-center mb-8">
         <div className="text-sm text-forest-600 mb-2">
           {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
         <h1 className="text-2xl font-bold text-book-leather mb-4">
-          Daily Learning
+          📖 Daily Learning
         </h1>
-        <div className="w-16 h-1 bg-gradient-to-r from-gold-400 to-gold-600 mx-auto rounded-full"></div>
+        <div className="w-16 h-1 bg-gradient-to-r from-gold-400 to-gold-600 mx-auto rounded-full animate-gold-glow"></div>
+        
+        {/* Achievement Stickers */}
+        <div className="mt-4 flex items-center justify-center space-x-4">
+          <AchievementStickers />
+          <button
+            onClick={() => setShowAchievements(true)}
+            className="text-forest-600 hover:text-forest-800 text-sm"
+          >
+            View All →
+          </button>
+        </div>
       </div>
 
       {/* Progress Ribbon */}
-      <div className="bg-gradient-to-r from-gold-50 to-amber-50 border border-gold-200 rounded-lg p-4 mb-6">
+      <div className="bg-gradient-to-r from-gold-50 to-amber-50 border border-gold-200 rounded-lg p-4 mb-6 animate-ribbon-float">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
             <span className="text-2xl mr-2">🎯</span>
@@ -116,7 +127,7 @@ const DailyLearning = () => {
       </div>
 
       {/* Lesson of the Day */}
-      <div className="bg-white border border-forest-200 rounded-lg p-6 mb-6 shadow-sm">
+      <div className="bg-white border border-forest-200 rounded-lg p-6 mb-6 shadow-sm page-curl">
         <div className="flex items-center mb-4">
           <div className="bg-forest-600 text-white p-2 rounded-lg mr-3">
             <span className="text-xl">💡</span>
@@ -131,7 +142,7 @@ const DailyLearning = () => {
           </div>
         </div>
         
-        <div className="bg-forest-50 p-4 rounded-lg border-l-4 border-forest-600 mb-4">
+        <div className="bg-forest-50 p-4 rounded-lg border-l-4 border-forest-600 mb-4 parchment-texture">
           <h3 className="font-bold text-book-leather mb-2">{dailyLesson.title}</h3>
           <p className="text-forest-700 leading-relaxed">{dailyLesson.content}</p>
         </div>
@@ -144,10 +155,37 @@ const DailyLearning = () => {
         </button>
       </div>
 
+      {/* Picture Frame Scenarios */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowPictureFrames(!showPictureFrames)}
+          className="w-full bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 text-left hover:shadow-lg transition-shadow"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="text-2xl mr-3">🖼️</div>
+              <div>
+                <h3 className="font-bold text-book-leather">Picture Frame Scenarios</h3>
+                <p className="text-forest-600 text-sm">Interactive legal simulations</p>
+              </div>
+            </div>
+            <div className="text-forest-400">
+              {showPictureFrames ? '↑' : '↓'}
+            </div>
+          </div>
+        </button>
+        
+        {showPictureFrames && (
+          <div className="mt-4 animate-fade-in">
+            <PictureFrameScenario />
+          </div>
+        )}
+      </div>
+
       {/* Bottom Section: Myth and Script */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Myth of the Day */}
-        <div className="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-lg p-6">
+        <div className="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-lg p-6 page-curl">
           <div className="flex items-center mb-4">
             <div className="bg-red-500 text-white p-2 rounded-lg mr-3">
               <span className="text-xl">🎯</span>
@@ -180,7 +218,7 @@ const DailyLearning = () => {
         </div>
 
         {/* Quick Script */}
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6">
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6 page-curl">
           <div className="flex items-center mb-4">
             <div className="bg-purple-500 text-white p-2 rounded-lg mr-3">
               <span className="text-xl">📝</span>
@@ -196,7 +234,7 @@ const DailyLearning = () => {
               <p className="text-purple-700 text-sm">{quickScript.scenario}</p>
             </div>
             
-            <div className="bg-white border border-purple-200 rounded-lg p-3">
+            <div className="bg-white border border-purple-200 rounded-lg p-3 parchment-texture">
               <div className="text-sm font-medium text-book-leather mb-2">💬 What to say:</div>
               <p className="text-forest-700 italic">"{quickScript.script}"</p>
             </div>
@@ -211,10 +249,20 @@ const DailyLearning = () => {
         </div>
       </div>
 
-      {/* Gavvy the Gavel in margin */}
-      <div className="fixed bottom-20 right-8 z-10">
-        <MascotWidget position="margin" />
-      </div>
+      {/* Margin Scribbles */}
+      <MarginScribbles position="right" context="general" />
+
+      {/* Modals */}
+      <AchievementStickers 
+        showModal={showAchievements} 
+        onClose={() => setShowAchievements(false)} 
+      />
+      
+      <UserSignaturePage 
+        isOpen={showSignaturePage} 
+        onClose={() => setShowSignaturePage(false)} 
+        onSignatureComplete={() => setShowSignaturePage(false)} 
+      />
     </div>
   );
 };
