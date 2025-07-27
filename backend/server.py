@@ -3062,7 +3062,7 @@ async def get_simulations_filtered(
         # Enrich with user progress
         enriched_sims = []
         for sim in simulations:
-            sim_dict = dict(sim)
+            sim_dict = clean_mongo_document(sim)
             
             # Get user completion status
             user_progress = await db.simulation_progress.find_one({
@@ -3071,8 +3071,13 @@ async def get_simulations_filtered(
                 "completed": True
             })
             
-            sim_dict["user_completed"] = bool(user_progress)
-            sim_dict["user_score"] = user_progress.get("score", 0) if user_progress else 0
+            if user_progress:
+                user_progress_clean = clean_mongo_document(user_progress)
+                sim_dict["user_completed"] = True
+                sim_dict["user_score"] = user_progress_clean.get("score", 0)
+            else:
+                sim_dict["user_completed"] = False
+                sim_dict["user_score"] = 0
             
             enriched_sims.append(sim_dict)
         
