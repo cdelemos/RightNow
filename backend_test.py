@@ -2292,6 +2292,17 @@ class BackendTester:
         self.test_emergency_authentication_requirements()
         self.test_emergency_contact_deletion()
         
+        # Purpose-Driven XP Unlocks tests (NEW FEATURE)
+        print("\n🏆 PURPOSE-DRIVEN XP UNLOCKS SYSTEM TESTS")
+        print("-" * 50)
+        self.test_purpose_driven_xp_unlocks_system()
+        self.test_regional_protections_initialization()
+        self.test_protection_unlock_requirements_checking()
+        self.test_protection_unlock_edge_cases()
+        self.test_trophy_wall_integration_with_gamification()
+        self.test_mascot_celebration_system_integration()
+        self.test_user_with_no_xp_or_lessons()
+        
         # Summary
         print("\n" + "=" * 70)
         print("📊 TEST SUMMARY")
