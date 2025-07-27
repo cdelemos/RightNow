@@ -5669,6 +5669,206 @@ async def initialize_learning_paths():
     
     await db.learning_paths.insert_many([path.dict() for path in created_paths])
 
+async def initialize_regional_protections():
+    """Initialize the database with regional protections for unlocking"""
+    # Check if protections already exist
+    existing_count = await db.regional_protections.count_documents({})
+    if existing_count > 0:
+        return  # Protections already initialized
+    
+    # Define regional protections data
+    regional_protections_data = [
+        {
+            "statute_code": "CA Civil Code §1942",
+            "statute_title": "Tenant Right to Repair",
+            "protection_description": "Right to withhold rent for necessary repairs when landlord fails to maintain habitability",
+            "state": "California",
+            "protection_type": ProtectionType.RENTER,
+            "unlock_requirements": {
+                "lessons_completed": 3,
+                "xp_required": 150
+            },
+            "is_federal": False
+        },
+        {
+            "statute_code": "CA Civil Code §1946.2",
+            "statute_title": "Security Deposit Protection",
+            "protection_description": "Protection against excessive security deposits and requirements for deposit return",
+            "state": "California",
+            "protection_type": ProtectionType.RENTER,
+            "unlock_requirements": {
+                "lessons_completed": 2,
+                "xp_required": 100
+            },
+            "is_federal": False
+        },
+        {
+            "statute_code": "1st Amendment",
+            "statute_title": "Peaceful Assembly Rights",
+            "protection_description": "Constitutional right to peaceful assembly and protest",
+            "state": "Federal",
+            "protection_type": ProtectionType.PROTESTER,
+            "unlock_requirements": {
+                "lessons_completed": 2,
+                "xp_required": 100
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "4th Amendment",
+            "statute_title": "Constitutional Rights",
+            "protection_description": "Protection against unreasonable searches and seizures",
+            "state": "Federal",
+            "protection_type": ProtectionType.GENERAL,
+            "unlock_requirements": {
+                "lessons_completed": 5,
+                "xp_required": 300
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "5th Amendment",
+            "statute_title": "Miranda Rights",
+            "protection_description": "Right to remain silent and right to an attorney",
+            "state": "Federal",
+            "protection_type": ProtectionType.GENERAL,
+            "unlock_requirements": {
+                "lessons_completed": 4,
+                "xp_required": 250
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "14th Amendment",
+            "statute_title": "Equal Protection",
+            "protection_description": "Equal protection under the law regardless of race, gender, or national origin",
+            "state": "Federal",
+            "protection_type": ProtectionType.GENERAL,
+            "unlock_requirements": {
+                "lessons_completed": 6,
+                "xp_required": 400
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "Title VII",
+            "statute_title": "Employment Discrimination Protection",
+            "protection_description": "Protection against workplace discrimination based on protected characteristics",
+            "state": "Federal",
+            "protection_type": ProtectionType.WORKER,
+            "unlock_requirements": {
+                "lessons_completed": 4,
+                "xp_required": 250
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "Fair Labor Standards Act",
+            "statute_title": "Wage and Hour Protection",
+            "protection_description": "Protection for minimum wage, overtime pay, and working conditions",
+            "state": "Federal",
+            "protection_type": ProtectionType.WORKER,
+            "unlock_requirements": {
+                "lessons_completed": 3,
+                "xp_required": 200
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "Title IX",
+            "statute_title": "Education Discrimination Protection",
+            "protection_description": "Protection against sex-based discrimination in education",
+            "state": "Federal",
+            "protection_type": ProtectionType.STUDENT,
+            "unlock_requirements": {
+                "lessons_completed": 3,
+                "xp_required": 180
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "FERPA",
+            "statute_title": "Student Privacy Rights",
+            "protection_description": "Protection of student education records and privacy rights",
+            "state": "Federal",
+            "protection_type": ProtectionType.STUDENT,
+            "unlock_requirements": {
+                "lessons_completed": 2,
+                "xp_required": 120
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "ADA",
+            "statute_title": "Disability Rights Protection",
+            "protection_description": "Protection against discrimination based on disability",
+            "state": "Federal",
+            "protection_type": ProtectionType.DISABLED,
+            "unlock_requirements": {
+                "lessons_completed": 4,
+                "xp_required": 280
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "Immigration and Nationality Act",
+            "statute_title": "Immigration Rights Protection",
+            "protection_description": "Basic rights for immigrants regardless of status",
+            "state": "Federal",
+            "protection_type": ProtectionType.UNDOCUMENTED,
+            "unlock_requirements": {
+                "lessons_completed": 5,
+                "xp_required": 350
+            },
+            "is_federal": True
+        },
+        {
+            "statute_code": "NY Education Law §3214",
+            "statute_title": "Student Due Process Rights",
+            "protection_description": "Due process rights for students facing suspension or expulsion",
+            "state": "New York",
+            "protection_type": ProtectionType.STUDENT,
+            "unlock_requirements": {
+                "lessons_completed": 3,
+                "xp_required": 200
+            },
+            "is_federal": False
+        },
+        {
+            "statute_code": "TX Property Code §92.006",
+            "statute_title": "Landlord Entry Rights",
+            "protection_description": "Protection against unlawful entry by landlord",
+            "state": "Texas",
+            "protection_type": ProtectionType.RENTER,
+            "unlock_requirements": {
+                "lessons_completed": 2,
+                "xp_required": 150
+            },
+            "is_federal": False
+        },
+        {
+            "statute_code": "FL Statute §83.56",
+            "statute_title": "Termination of Tenancy",
+            "protection_description": "Protection against unlawful eviction and termination procedures",
+            "state": "Florida",
+            "protection_type": ProtectionType.RENTER,
+            "unlock_requirements": {
+                "lessons_completed": 4,
+                "xp_required": 220
+            },
+            "is_federal": False
+        }
+    ]
+    
+    # Create regional protections
+    created_protections = []
+    for protection_data in regional_protections_data:
+        protection = RegionalProtection(**protection_data)
+        created_protections.append(protection)
+    
+    await db.regional_protections.insert_many([protection.dict() for protection in created_protections])
+    logging.info(f"Initialized {len(created_protections)} regional protections")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
