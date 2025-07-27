@@ -2749,6 +2749,96 @@ async def get_user_progress(current_user: User = Depends(get_current_user)):
         }
     )
 
+# User protection profile endpoints
+@api_router.get("/user/protection-profile", response_model=APIResponse)
+async def get_user_protection_profile(current_user: User = Depends(get_current_user)):
+    """Get user's protection profile"""
+    try:
+        # Check if user has existing protection profile
+        protection_profile = await db.user_protection_profiles.find_one({"user_id": current_user.id})
+        
+        if not protection_profile:
+            # Create default protection profile based on user type
+            default_protection_type = "GENERAL"
+            if current_user.user_type == "law_student":
+                default_protection_type = "STUDENT"
+            elif current_user.user_type == "undergraduate":
+                default_protection_type = "STUDENT"
+                
+            protection_profile = {
+                "id": str(uuid.uuid4()),
+                "user_id": current_user.id,
+                "protection_type": default_protection_type,
+                "interests": [],
+                "situation": "learning",
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+            await db.user_protection_profiles.insert_one(protection_profile)
+        
+        return APIResponse(
+            success=True,
+            message="Protection profile retrieved successfully",
+            data={
+                "id": protection_profile.get("id"),
+                "user_id": protection_profile.get("user_id"),
+                "protection_type": protection_profile.get("protection_type", "GENERAL"),
+                "interests": protection_profile.get("interests", []),
+                "situation": protection_profile.get("situation", "learning"),
+                "created_at": protection_profile.get("created_at"),
+                "updated_at": protection_profile.get("updated_at")
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting protection profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve protection profile")
+
+@api_router.post("/user/protection-profile", response_model=APIResponse)
+async def create_or_update_protection_profile(
+    profile_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Create or update user's protection profile"""
+    try:
+        protection_profile = await db.user_protection_profiles.find_one({"user_id": current_user.id})
+        
+        if protection_profile:
+            # Update existing profile
+            await db.user_protection_profiles.update_one(
+                {"user_id": current_user.id},
+                {"$set": {
+                    "protection_type": profile_data.get("protection_type", protection_profile.get("protection_type")),
+                    "interests": profile_data.get("interests", protection_profile.get("interests", [])),
+                    "situation": profile_data.get("situation", protection_profile.get("situation", "learning")),
+                    "updated_at": datetime.utcnow()
+                }}
+            )
+            message = "Protection profile updated successfully"
+        else:
+            # Create new profile
+            new_profile = {
+                "id": str(uuid.uuid4()),
+                "user_id": current_user.id,
+                "protection_type": profile_data.get("protection_type", "GENERAL"),
+                "interests": profile_data.get("interests", []),
+                "situation": profile_data.get("situation", "learning"),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+            await db.user_protection_profiles.insert_one(new_profile)
+            message = "Protection profile created successfully"
+        
+        return APIResponse(
+            success=True,
+            message=message,
+            data={"user_id": current_user.id}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error creating/updating protection profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save protection profile")
+
 # AI Memory & Suggestion Engine endpoints
 @api_router.post("/ai/memory/track", response_model=APIResponse)
 async def track_user_interaction(
