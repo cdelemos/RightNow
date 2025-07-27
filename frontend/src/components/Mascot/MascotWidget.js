@@ -9,7 +9,7 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
     message: '',
     mood: 'protective',
     appearance: {
-      emoji: '⚖️',
+      emoji: '🔨',
       expression: '🛡️',
       color: '#2B4C7E',
       animation: 'steady'
