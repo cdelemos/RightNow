@@ -968,7 +968,7 @@ const PersonalizationSetup = ({ currentPersonalization, onBack, onComplete }) =>
 };
 
 // Progress View Component
-const ProgressView = ({ userProgress, pathTypeLabels }) => {
+const ProgressView = ({ userProgress, pathTypeLabels, getPathTypeColorClasses }) => {
   const completedPaths = userProgress.filter(p => p.is_completed);
   const inProgressPaths = userProgress.filter(p => !p.is_completed && p.progress_percentage > 0);
   const totalXp = userProgress.reduce((sum, p) => sum + p.total_xp_earned, 0);
