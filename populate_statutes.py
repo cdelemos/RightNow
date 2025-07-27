@@ -7,7 +7,7 @@ covering housing, employment, consumer protection, criminal law, civil rights, e
 import requests
 import json
 
-BACKEND_URL = "https://b8b0c30c-2b87-419c-b499-fbade7024ddf.preview.emergentagent.com/api"
+BACKEND_URL = "https://a456f05e-7b3d-4acf-881f-ef989435baa8.preview.emergentagent.com/api"
 
 # Login as admin user
 login_data = {
