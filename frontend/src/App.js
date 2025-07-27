@@ -71,88 +71,103 @@ function App() {
       <GamificationProvider>
         <div className="App">
           <BrowserRouter>
-          <Navbar />
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } />
-            <Route path="/register" element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            } />
+            <Routes>
+              {/* Public routes */}
+              <Route path="/login" element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } />
+              <Route path="/register" element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              } />
+              
+              {/* Protected routes wrapped in BookContainer */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <DailyLearning />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              <Route path="/statutes" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <StatuteLookup />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              <Route path="/questions" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <CommunityQA />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              <Route path="/myths" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <MythFeed />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              <Route path="/simulations" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <SimulationPlayer />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              <Route path="/learning-paths" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <LearningPaths />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              <Route path="/ai-chat" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <AIChat />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              <Route path="/emergency-contacts" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <EmergencyContacts />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              <Route path="/gamification" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <GamificationDashboard />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
+              
+              {/* Default redirect */}
+              <Route path="/" element={<Navigate to="/dashboard" />} />
+            </Routes>
             
-            {/* Protected routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/statutes" element={
-              <ProtectedRoute>
-                <StatuteLookup />
-              </ProtectedRoute>
-            } />
-            <Route path="/questions" element={
-              <ProtectedRoute>
-                <CommunityQA />
-              </ProtectedRoute>
-            } />
-            <Route path="/myths" element={
-              <ProtectedRoute>
-                <MythFeed />
-              </ProtectedRoute>
-            } />
-            <Route path="/simulations" element={
-              <ProtectedRoute>
-                <SimulationPlayer />
-              </ProtectedRoute>
-            } />
-            <Route path="/learning-paths" element={
-              <ProtectedRoute>
-                <LearningPaths />
-              </ProtectedRoute>
-            } />
-            <Route path="/ai-chat" element={
-              <ProtectedRoute>
-                <AIChat />
-              </ProtectedRoute>
-            } />
-            <Route path="/emergency-contacts" element={
-              <ProtectedRoute>
-                <EmergencyContacts />
-              </ProtectedRoute>
-            } />
-            <Route path="/gamification" element={
-              <ProtectedRoute>
-                <GamificationDashboard />
-              </ProtectedRoute>
-            } />
+            {/* Always-visible widgets when authenticated */}
+            <ProtectedRoute>
+              <EmergencySOS />
+            </ProtectedRoute>
             
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" />} />
-          </Routes>
-          
-          {/* Emergency SOS - Always available when authenticated */}
-          <ProtectedRoute>
-            <EmergencySOS />
-          </ProtectedRoute>
-          
-          {/* Gamification Widget - Always available when authenticated */}
-          <ProtectedRoute>
-            <GamificationWidget position="top-right" />
-          </ProtectedRoute>
-          
-          {/* Mascot Widget - Always available when authenticated */}
-          <ProtectedRoute>
-            <MascotWidget position="bottom-left" />
-          </ProtectedRoute>
-        </BrowserRouter>
-      </div>
-    </GamificationProvider>
+            <ProtectedRoute>
+              <GamificationWidget position="top-right" />
+            </ProtectedRoute>
+            
+            <ProtectedRoute>
+              <MascotWidget position="bottom-right" />
+            </ProtectedRoute>
+          </BrowserRouter>
+        </div>
+      </GamificationProvider>
     </AuthProvider>
   );
 }
