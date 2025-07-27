@@ -12,7 +12,8 @@ const TableOfContents = ({ onNavigate }) => {
       pages: [
         { title: 'Legal Statutes', href: '/statutes', icon: '📚' },
         { title: 'Learning Paths', href: '/learning-paths', icon: '🎓' },
-        { title: 'Legal Myths', href: '/myths', icon: '🎯' },
+        { title: 'Personalized Learning', href: '/personalized-learning', icon: '🎯' },
+        { title: 'Legal Myths', href: '/myths', icon: '🔍' },
       ]
     },
     {
