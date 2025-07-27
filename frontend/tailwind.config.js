@@ -6,7 +6,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Sage green color palette inspired by Duolingo
+        // Forest green color palette for book theme
+        forest: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+        },
+        // Primary book colors
+        book: {
+          leather: '#0b5345', // Forest green for book cover
+          page: '#fdfcf8', // Cream/parchment for pages
+          text: '#1f2937', // Dark gray for text
+          accent: '#059669', // Teal accent
+        },
+        // Sage green (keeping for backward compatibility)
         sage: {
           50: '#f6f8f6',
           100: '#e3ebe3',
