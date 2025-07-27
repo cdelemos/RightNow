@@ -3097,6 +3097,289 @@ async def get_simulations_filtered(
         logging.error(f"Error getting simulations: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve simulations")
 
+# Real-time Notifications System endpoints
+@api_router.get("/notifications", response_model=APIResponse)
+async def get_user_notifications(
+    page: int = 1,
+    per_page: int = 20,
+    unread_only: bool = False,
+    current_user: User = Depends(get_current_user)
+):
+    """Get user notifications with pagination"""
+    try:
+        query = {"user_id": current_user.id}
+        if unread_only:
+            query["is_read"] = False
+        
+        # Count total notifications
+        total = await db.notifications.count_documents(query)
+        
+        # Get paginated notifications
+        skip = (page - 1) * per_page
+        notifications = await db.notifications.find(query).sort("created_at", -1).skip(skip).limit(per_page).to_list(per_page)
+        
+        # Clean MongoDB documents
+        cleaned_notifications = [clean_mongo_document(notif) for notif in notifications]
+        
+        return APIResponse(
+            success=True,
+            message="Notifications retrieved successfully",
+            data={
+                "notifications": cleaned_notifications,
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": (total + per_page - 1) // per_page,
+                "unread_count": await db.notifications.count_documents({"user_id": current_user.id, "is_read": False})
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting notifications: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve notifications")
+
+@api_router.post("/notifications/{notification_id}/mark-read", response_model=APIResponse)
+async def mark_notification_read(
+    notification_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Mark a notification as read"""
+    try:
+        result = await db.notifications.update_one(
+            {"id": notification_id, "user_id": current_user.id},
+            {"$set": {"is_read": True, "read_at": datetime.utcnow()}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        
+        return APIResponse(
+            success=True,
+            message="Notification marked as read",
+            data={"notification_id": notification_id}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error marking notification as read: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to mark notification as read")
+
+@api_router.post("/notifications/mark-all-read", response_model=APIResponse)
+async def mark_all_notifications_read(current_user: User = Depends(get_current_user)):
+    """Mark all user notifications as read"""
+    try:
+        result = await db.notifications.update_many(
+            {"user_id": current_user.id, "is_read": False},
+            {"$set": {"is_read": True, "read_at": datetime.utcnow()}}
+        )
+        
+        return APIResponse(
+            success=True,
+            message=f"Marked {result.modified_count} notifications as read",
+            data={"updated_count": result.modified_count}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error marking all notifications as read: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to mark notifications as read")
+
+@api_router.get("/notifications/settings", response_model=APIResponse)
+async def get_notification_settings(current_user: User = Depends(get_current_user)):
+    """Get user notification settings"""
+    try:
+        settings = await db.notification_settings.find_one({"user_id": current_user.id})
+        
+        if not settings:
+            # Create default settings
+            default_settings = {
+                "id": str(uuid.uuid4()),
+                "user_id": current_user.id,
+                "enabled": True,
+                "notification_types": {
+                    "achievement": True,
+                    "xp_gained": True,
+                    "badge_earned": True,
+                    "level_up": True,
+                    "streak_milestone": True,
+                    "community_activity": True,
+                    "learning_reminder": True,
+                    "emergency_alert": True,
+                    "system_update": True
+                },
+                "quiet_hours_start": None,
+                "quiet_hours_end": None,
+                "max_notifications_per_day": 50,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+            await db.notification_settings.insert_one(default_settings)
+            settings = default_settings
+        
+        return APIResponse(
+            success=True,
+            message="Notification settings retrieved successfully",
+            data=clean_mongo_document(settings)
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting notification settings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve notification settings")
+
+@api_router.post("/notifications/settings", response_model=APIResponse)
+async def update_notification_settings(
+    settings_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Update user notification settings"""
+    try:
+        result = await db.notification_settings.update_one(
+            {"user_id": current_user.id},
+            {
+                "$set": {
+                    "enabled": settings_data.get("enabled", True),
+                    "notification_types": settings_data.get("notification_types", {}),
+                    "quiet_hours_start": settings_data.get("quiet_hours_start"),
+                    "quiet_hours_end": settings_data.get("quiet_hours_end"),
+                    "max_notifications_per_day": settings_data.get("max_notifications_per_day", 50),
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+        
+        return APIResponse(
+            success=True,
+            message="Notification settings updated successfully",
+            data={"user_id": current_user.id}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error updating notification settings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update notification settings")
+
+# Advanced Search & Filtering endpoints
+@api_router.get("/search/filters", response_model=APIResponse)
+async def get_user_search_filters(current_user: User = Depends(get_current_user)):
+    """Get user's saved search filters"""
+    try:
+        filters = await db.search_filters.find({"user_id": current_user.id}).sort("last_used", -1).to_list(50)
+        cleaned_filters = [clean_mongo_document(f) for f in filters]
+        
+        return APIResponse(
+            success=True,
+            message="Search filters retrieved successfully",
+            data=cleaned_filters
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting search filters: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve search filters")
+
+@api_router.post("/search/filters", response_model=APIResponse)
+async def save_search_filter(
+    filter_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Save a search filter for reuse"""
+    try:
+        search_filter = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user.id,
+            "filter_name": filter_data.get("filter_name"),
+            "filter_type": filter_data.get("filter_type"),
+            "filter_criteria": filter_data.get("filter_criteria", {}),
+            "is_saved": True,
+            "is_default": filter_data.get("is_default", False),
+            "use_count": 0,
+            "created_at": datetime.utcnow(),
+            "last_used": None
+        }
+        
+        await db.search_filters.insert_one(search_filter)
+        
+        return APIResponse(
+            success=True,
+            message="Search filter saved successfully",
+            data={"filter_id": search_filter["id"]}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error saving search filter: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save search filter")
+
+# Enhanced Social Features endpoints
+@api_router.get("/users/profiles/{user_id}", response_model=APIResponse)
+async def get_user_profile(
+    user_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get user profile information"""
+    try:
+        profile = await db.user_profiles.find_one({"user_id": user_id})
+        user_info = await db.users.find_one({"id": user_id})
+        
+        if not user_info:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not profile:
+            # Create basic profile if it doesn't exist
+            profile = {
+                "id": str(uuid.uuid4()),
+                "user_id": user_id,
+                "display_name": user_info.get("username", "Anonymous"),
+                "bio": None,
+                "avatar_url": None,
+                "location": None,
+                "interests": [],
+                "specialties": [],
+                "privacy_settings": {
+                    "show_level": True,
+                    "show_badges": True,
+                    "show_activity": True,
+                    "allow_follow": True,
+                    "show_location": False
+                },
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+        
+        # Get user stats if privacy allows
+        user_stats = None
+        if profile["privacy_settings"].get("show_level", True):
+            user_stats = {
+                "level": user_info.get("level", 1),
+                "xp": user_info.get("xp", 0),
+                "badges_count": len(user_info.get("badges", [])),
+                "streak_days": user_info.get("streak_days", 0)
+            }
+            
+        # Check if current user follows this user
+        is_following = False
+        if current_user.id != user_id:
+            follow_record = await db.user_follows.find_one({
+                "follower_id": current_user.id,
+                "following_id": user_id
+            })
+            is_following = bool(follow_record)
+        
+        profile_data = clean_mongo_document(profile)
+        profile_data["user_stats"] = user_stats
+        profile_data["is_following"] = is_following
+        profile_data["is_own_profile"] = current_user.id == user_id
+        
+        return APIResponse(
+            success=True,
+            message="User profile retrieved successfully",
+            data=profile_data
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error getting user profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve user profile")
+
 # AI Memory & Suggestion Engine endpoints
 @api_router.post("/ai/memory/track", response_model=APIResponse)
 async def track_user_interaction(
