@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
-import logging
+from backend.mascot_system import MascotInteractionEngine, MascotAction, MascotMood
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import bcrypt
