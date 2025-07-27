@@ -101,7 +101,7 @@ const Register = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <Logo size="xl" showText={true} />
+            <CustomLogo size="xl" showText={true} />
           </div>
           <h2 className="text-3xl font-bold text-forest-800">
             Join the community! 🎓
