@@ -427,12 +427,16 @@ async def track_statute_view(user_id: str, statute_id: str):
             {"$set": {"read_at": datetime.utcnow()}}
         )
 
-async def award_xp(user_id: str, xp_amount: int, action: str):
-    """Award XP to user and update level if necessary"""
+async def award_xp(user_id: str, xp_amount: int, action: str, context: Dict[str, Any] = {}):
+    """Award XP to user and update comprehensive gamification system"""
+    if xp_amount <= 0:
+        return
+    
     user = await db.users.find_one({"id": user_id})
     if not user:
         return
     
+    old_level = user.get("level", 1)
     new_xp = user.get("xp", 0) + xp_amount
     new_level = calculate_level_from_xp(new_xp)
     
@@ -448,45 +452,410 @@ async def award_xp(user_id: str, xp_amount: int, action: str):
         }
     )
     
-    # Check for level up and award badges if necessary
-    if new_level > user.get("level", 1):
+    # Log XP transaction
+    xp_transaction = XPTransaction(
+        user_id=user_id,
+        action=action,
+        xp_amount=xp_amount,
+        description=f"Earned {xp_amount} XP for {action.replace('_', ' ')}",
+        context=context
+    )
+    await db.xp_transactions.insert_one(xp_transaction.dict())
+    
+    # Update user stats
+    await update_user_stats(user_id, action, xp_amount)
+    
+    # Update or create streak
+    await update_streaks(user_id, action)
+    
+    # Check for level up and award badges
+    if new_level > old_level:
+        await handle_level_up(user_id, new_level, old_level)
         await check_and_award_badges(user_id, new_level, action)
+    
+    # Check achievements
+    await check_achievements(user_id, action, context)
+    
+    # Update leaderboards
+    await update_leaderboards(user_id, xp_amount)
 
 def calculate_level_from_xp(xp: int) -> int:
-    """Calculate user level based on XP (simple formula: level = XP / 100 + 1)"""
-    return min(max(xp // 100 + 1, 1), 50)  # Cap at level 50
+    """Calculate user level based on XP (progressive formula)"""
+    # Progressive XP requirements: Level 1: 0-99, Level 2: 100-249, Level 3: 250-449, etc.
+    if xp < 100:
+        return 1
+    elif xp < 250:
+        return 2
+    elif xp < 450:
+        return 3
+    elif xp < 700:
+        return 4
+    elif xp < 1000:
+        return 5
+    else:
+        # For higher levels: every 150 XP beyond 1000
+        return min(6 + (xp - 1000) // 150, 50)
+
+async def update_user_stats(user_id: str, action: str, xp_amount: int):
+    """Update comprehensive user statistics"""
+    # Get or create user stats
+    stats = await db.user_stats.find_one({"user_id": user_id})
+    if not stats:
+        stats = UserStats(user_id=user_id).dict()
+        await db.user_stats.insert_one(stats)
+    
+    # Update based on action
+    update_data = {
+        "total_xp": stats.get("total_xp", 0) + xp_amount,
+        "updated_at": datetime.utcnow()
+    }
+    
+    # Action-specific updates
+    if action in ["read_statute", "bookmark_statute"]:
+        update_data["statutes_read"] = stats.get("statutes_read", 0) + 1
+    elif action in ["read_myth", "like_myth", "share_myth"]:
+        update_data["myths_read"] = stats.get("myths_read", 0) + 1
+    elif action == "ask_question":
+        update_data["questions_asked"] = stats.get("questions_asked", 0) + 1
+    elif action == "answer_question":
+        update_data["answers_provided"] = stats.get("answers_provided", 0) + 1
+    elif action == "complete_simulation":
+        update_data["simulations_completed"] = stats.get("simulations_completed", 0) + 1
+    elif action == "complete_learning_path":
+        update_data["learning_paths_completed"] = stats.get("learning_paths_completed", 0) + 1
+    elif action == "ai_query":
+        update_data["ai_chats_initiated"] = stats.get("ai_chats_initiated", 0) + 1
+    elif action == "receive_upvote":
+        update_data["upvotes_received"] = stats.get("upvotes_received", 0) + 1
+    elif action == "share_myth":
+        update_data["content_shared"] = stats.get("content_shared", 0) + 1
+    
+    await db.user_stats.update_one(
+        {"user_id": user_id},
+        {"$set": update_data}
+    )
+
+async def update_streaks(user_id: str, action: str):
+    """Update user streak counters"""
+    today = datetime.utcnow().date()
+    
+    # Daily login streak
+    if action in ["read_statute", "read_myth", "ask_question", "ai_query"]:
+        streak = await db.streaks.find_one({"user_id": user_id, "streak_type": "daily_login"})
+        
+        if not streak:
+            # Create new streak
+            new_streak = Streak(
+                user_id=user_id,
+                streak_type="daily_login",
+                current_count=1,
+                best_count=1,
+                last_activity=datetime.utcnow()
+            )
+            await db.streaks.insert_one(new_streak.dict())
+        else:
+            last_activity_date = streak["last_activity"].date()
+            
+            if last_activity_date == today:
+                # Already logged in today, no update needed
+                return
+            elif last_activity_date == today - timedelta(days=1):
+                # Consecutive day, increment streak
+                new_count = streak["current_count"] + 1
+                best_count = max(streak["best_count"], new_count)
+                await db.streaks.update_one(
+                    {"user_id": user_id, "streak_type": "daily_login"},
+                    {"$set": {
+                        "current_count": new_count,
+                        "best_count": best_count,
+                        "last_activity": datetime.utcnow()
+                    }}
+                )
+            else:
+                # Streak broken, restart
+                await db.streaks.update_one(
+                    {"user_id": user_id, "streak_type": "daily_login"},
+                    {"$set": {
+                        "current_count": 1,
+                        "last_activity": datetime.utcnow()
+                    }}
+                )
+    
+    # Weekly learning streak
+    if action in ["complete_learning_node", "complete_learning_path"]:
+        await update_weekly_streak(user_id, "weekly_learning")
+
+async def update_weekly_streak(user_id: str, streak_type: str):
+    """Update weekly streak (7-day periods)"""
+    now = datetime.utcnow()
+    current_week = now.isocalendar()[1]  # Week number
+    
+    streak = await db.streaks.find_one({"user_id": user_id, "streak_type": streak_type})
+    
+    if not streak:
+        new_streak = Streak(
+            user_id=user_id,
+            streak_type=streak_type,
+            current_count=1,
+            best_count=1,
+            last_activity=now
+        )
+        await db.streaks.insert_one(new_streak.dict())
+    else:
+        last_week = streak["last_activity"].isocalendar()[1]
+        
+        if last_week == current_week:
+            # Same week, no update needed
+            return
+        elif last_week == current_week - 1:
+            # Consecutive week, increment streak
+            new_count = streak["current_count"] + 1
+            best_count = max(streak["best_count"], new_count)
+            await db.streaks.update_one(
+                {"user_id": user_id, "streak_type": streak_type},
+                {"$set": {
+                    "current_count": new_count,
+                    "best_count": best_count,
+                    "last_activity": now
+                }}
+            )
+        else:
+            # Streak broken, restart
+            await db.streaks.update_one(
+                {"user_id": user_id, "streak_type": streak_type},
+                {"$set": {
+                    "current_count": 1,
+                    "last_activity": now
+                }}
+            )
+
+async def handle_level_up(user_id: str, new_level: int, old_level: int):
+    """Handle level up celebration and rewards"""
+    # Award level up XP bonus
+    level_bonus = min(new_level * 10, 100)  # Cap at 100 XP bonus
+    
+    # Update user without triggering recursive level up
+    await db.users.update_one(
+        {"id": user_id},
+        {"$inc": {"xp": level_bonus}}
+    )
+    
+    # Log the level up bonus
+    xp_transaction = XPTransaction(
+        user_id=user_id,
+        action="level_up",
+        xp_amount=level_bonus,
+        description=f"Level up bonus: reached level {new_level}",
+        context={"old_level": old_level, "new_level": new_level}
+    )
+    await db.xp_transactions.insert_one(xp_transaction.dict())
 
 async def check_and_award_badges(user_id: str, level: int, action: str):
     """Check if user should receive any badges"""
     badges_to_award = []
     
-    # Level-based badges
-    if level >= 5:
-        badges_to_award.append("legal_scholar")
-    if level >= 10:
-        badges_to_award.append("statute_master")
-    if level >= 20:
-        badges_to_award.append("legal_expert")
+    # Get user stats for badge calculations
+    stats = await db.user_stats.find_one({"user_id": user_id})
+    if not stats:
+        return
     
-    # Action-based badges
-    if action == "read_statute":
-        statute_count = await db.user_statute_progress.count_documents({"user_id": user_id})
-        if statute_count >= 10:
-            badges_to_award.append("knowledge_seeker")
-        if statute_count >= 50:
-            badges_to_award.append("legal_encyclopedia")
+    # Level-based badges
+    level_badges = {
+        5: {"id": "legal_scholar", "name": "Legal Scholar", "description": "Reached level 5", "icon": "🎓"},
+        10: {"id": "statute_master", "name": "Statute Master", "description": "Reached level 10", "icon": "📚"},
+        15: {"id": "rights_advocate", "name": "Rights Advocate", "description": "Reached level 15", "icon": "⚖️"},
+        20: {"id": "legal_expert", "name": "Legal Expert", "description": "Reached level 20", "icon": "🏛️"},
+        25: {"id": "justice_champion", "name": "Justice Champion", "description": "Reached level 25", "icon": "🏆"},
+        30: {"id": "legal_legend", "name": "Legal Legend", "description": "Reached level 30", "icon": "👑"},
+        40: {"id": "supreme_jurist", "name": "Supreme Jurist", "description": "Reached level 40", "icon": "⭐"},
+        50: {"id": "legal_deity", "name": "Legal Deity", "description": "Reached maximum level", "icon": "🌟"}
+    }
+    
+    if level in level_badges:
+        badges_to_award.append(level_badges[level])
+    
+    # Activity-based badges
+    activity_badges = []
+    
+    # Statute reading badges
+    if stats.get("statutes_read", 0) >= 10:
+        activity_badges.append({"id": "knowledge_seeker", "name": "Knowledge Seeker", "description": "Read 10 statutes", "icon": "🔍"})
+    if stats.get("statutes_read", 0) >= 50:
+        activity_badges.append({"id": "legal_encyclopedia", "name": "Legal Encyclopedia", "description": "Read 50 statutes", "icon": "📖"})
+    if stats.get("statutes_read", 0) >= 100:
+        activity_badges.append({"id": "statute_completionist", "name": "Statute Completionist", "description": "Read 100 statutes", "icon": "📚"})
+    
+    # Myth reading badges
+    if stats.get("myths_read", 0) >= 10:
+        activity_badges.append({"id": "myth_buster", "name": "Myth Buster", "description": "Read 10 legal myths", "icon": "💥"})
+    if stats.get("myths_read", 0) >= 25:
+        activity_badges.append({"id": "fact_checker", "name": "Fact Checker", "description": "Read 25 legal myths", "icon": "✅"})
+    
+    # Community engagement badges
+    if stats.get("questions_asked", 0) >= 5:
+        activity_badges.append({"id": "curious_mind", "name": "Curious Mind", "description": "Asked 5 questions", "icon": "❓"})
+    if stats.get("answers_provided", 0) >= 10:
+        activity_badges.append({"id": "helpful_expert", "name": "Helpful Expert", "description": "Answered 10 questions", "icon": "🤝"})
+    if stats.get("upvotes_received", 0) >= 50:
+        activity_badges.append({"id": "community_favorite", "name": "Community Favorite", "description": "Received 50 upvotes", "icon": "💖"})
+    
+    # Learning path badges
+    if stats.get("learning_paths_completed", 0) >= 1:
+        activity_badges.append({"id": "learning_journey", "name": "Learning Journey", "description": "Completed first learning path", "icon": "🎒"})
+    if stats.get("learning_paths_completed", 0) >= 5:
+        activity_badges.append({"id": "knowledge_explorer", "name": "Knowledge Explorer", "description": "Completed 5 learning paths", "icon": "🗺️"})
+    
+    # Simulation badges
+    if stats.get("simulations_completed", 0) >= 5:
+        activity_badges.append({"id": "scenario_master", "name": "Scenario Master", "description": "Completed 5 simulations", "icon": "🎭"})
+    if stats.get("simulations_completed", 0) >= 15:
+        activity_badges.append({"id": "simulation_expert", "name": "Simulation Expert", "description": "Completed 15 simulations", "icon": "🎯"})
+    
+    # AI interaction badges
+    if stats.get("ai_chats_initiated", 0) >= 25:
+        activity_badges.append({"id": "ai_conversationalist", "name": "AI Conversationalist", "description": "Had 25 AI conversations", "icon": "🤖"})
+    
+    # Streak badges
+    streaks = await db.streaks.find({"user_id": user_id}).to_list(10)
+    for streak in streaks:
+        if streak["streak_type"] == "daily_login":
+            if streak["current_count"] >= 7:
+                activity_badges.append({"id": "daily_dedication", "name": "Daily Dedication", "description": "7-day login streak", "icon": "📅"})
+            if streak["current_count"] >= 30:
+                activity_badges.append({"id": "monthly_devotion", "name": "Monthly Devotion", "description": "30-day login streak", "icon": "📆"})
+            if streak["best_count"] >= 100:
+                activity_badges.append({"id": "unstoppable_force", "name": "Unstoppable Force", "description": "100-day login streak", "icon": "🔥"})
+    
+    badges_to_award.extend(activity_badges)
     
     # Award new badges
     user = await db.users.find_one({"id": user_id})
     current_badges = user.get("badges", [])
     
-    for badge in badges_to_award:
-        if badge not in current_badges:
-            current_badges.append(badge)
+    for badge_data in badges_to_award:
+        if badge_data["id"] not in current_badges:
+            current_badges.append(badge_data["id"])
+            
+            # Create badge record if it doesn't exist
+            existing_badge = await db.badges.find_one({"id": badge_data["id"]})
+            if not existing_badge:
+                badge = Badge(
+                    id=badge_data["id"],
+                    name=badge_data["name"],
+                    description=badge_data["description"],
+                    icon=badge_data["icon"],
+                    category=BadgeCategory.ACHIEVEMENT,
+                    xp_reward=20,
+                    rarity=BadgeRarity.COMMON
+                )
+                await db.badges.insert_one(badge.dict())
+            
+            # Award user badge
+            user_badge = UserBadge(
+                user_id=user_id,
+                badge_id=badge_data["id"]
+            )
+            await db.user_badges.insert_one(user_badge.dict())
+            
+            # Award XP bonus for earning badge
+            await db.users.update_one(
+                {"id": user_id},
+                {"$inc": {"xp": 20}}
+            )
     
+    # Update user's badge list
     await db.users.update_one(
         {"id": user_id},
         {"$set": {"badges": current_badges}}
+    )
+
+async def check_achievements(user_id: str, action: str, context: Dict[str, Any]):
+    """Check and update user achievements"""
+    # Get user achievements
+    user_achievements = await db.user_achievements.find({"user_id": user_id}).to_list(100)
+    
+    # For now, create simple achievements based on actions
+    achievement_configs = {
+        "read_100_statutes": {"target": 100, "action": "read_statute", "name": "Century Reader"},
+        "ask_50_questions": {"target": 50, "action": "ask_question", "name": "Inquisitive Mind"},
+        "complete_10_simulations": {"target": 10, "action": "complete_simulation", "name": "Simulation Master"},
+        "earn_1000_xp": {"target": 1000, "action": "any", "name": "XP Collector"}
+    }
+    
+    # Update achievements based on current action
+    for achievement_id, config in achievement_configs.items():
+        if config["action"] == action or config["action"] == "any":
+            user_achievement = next((ua for ua in user_achievements if ua["achievement_id"] == achievement_id), None)
+            
+            if not user_achievement:
+                # Create new achievement progress
+                user_achievement = UserAchievement(
+                    user_id=user_id,
+                    achievement_id=achievement_id,
+                    current_progress=1
+                )
+                await db.user_achievements.insert_one(user_achievement.dict())
+            elif not user_achievement.get("is_completed", False):
+                # Update existing achievement
+                new_progress = user_achievement.get("current_progress", 0) + 1
+                update_data = {"current_progress": new_progress}
+                
+                if new_progress >= config["target"]:
+                    update_data["is_completed"] = True
+                    update_data["completed_at"] = datetime.utcnow()
+                    
+                    # Award achievement XP
+                    await award_xp(user_id, 100, f"complete_achievement_{achievement_id}")
+                
+                await db.user_achievements.update_one(
+                    {"user_id": user_id, "achievement_id": achievement_id},
+                    {"$set": update_data}
+                )
+
+async def update_leaderboards(user_id: str, xp_amount: int):
+    """Update leaderboard rankings"""
+    # For now, just update weekly XP leaderboard
+    current_week = datetime.utcnow().isocalendar()[1]
+    week_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start -= timedelta(days=week_start.weekday())
+    
+    # Get or create weekly leaderboard
+    leaderboard = await db.leaderboards.find_one({
+        "leaderboard_type": "weekly_xp",
+        "period_start": {"$gte": week_start},
+        "is_active": True
+    })
+    
+    if not leaderboard:
+        leaderboard = Leaderboard(
+            leaderboard_type="weekly_xp",
+            period_start=week_start,
+            period_end=week_start + timedelta(days=7),
+            user_rankings=[]
+        )
+        await db.leaderboards.insert_one(leaderboard.dict())
+    
+    # Update user's score in leaderboard
+    user_rankings = leaderboard.get("user_rankings", [])
+    user_entry = next((entry for entry in user_rankings if entry["user_id"] == user_id), None)
+    
+    if user_entry:
+        user_entry["score"] += xp_amount
+    else:
+        user_rankings.append({
+            "user_id": user_id,
+            "score": xp_amount,
+            "rank": len(user_rankings) + 1
+        })
+    
+    # Sort and update ranks
+    user_rankings.sort(key=lambda x: x["score"], reverse=True)
+    for i, entry in enumerate(user_rankings):
+        entry["rank"] = i + 1
+    
+    await db.leaderboards.update_one(
+        {"leaderboard_type": "weekly_xp", "period_start": {"$gte": week_start}, "is_active": True},
+        {"$set": {"user_rankings": user_rankings}}
     )
 
 # Enhanced Community Q&A endpoints with voting and moderation
