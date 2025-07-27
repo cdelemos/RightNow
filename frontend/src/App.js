@@ -169,9 +169,10 @@ function App() {
             </ProtectedRoute>
           </BrowserRouter>
         </div>
-      </GamificationProvider>
-    </AuthProvider>
-  );
+      </UnlockProvider>
+    </GamificationProvider>
+  </AuthProvider>
+);
 }
 
 export default App;
