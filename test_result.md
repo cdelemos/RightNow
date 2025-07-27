@@ -486,10 +486,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Purpose-Driven XP Unlocks Frontend testing"
-    - "Trophy Wall interface functionality"
-    - "Unlock notification system"
-    - "Integration with existing book-themed UI"
+    - "Purpose-Driven XP Unlocks Frontend functionality verification"  
+    - "Trophy Wall interface with real API integration"
+    - "Unlock notification system testing"
+    - "Personalized Learning Content Filtering backend implementation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
