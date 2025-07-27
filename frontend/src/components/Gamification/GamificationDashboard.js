@@ -187,8 +187,8 @@ const GamificationDashboard = () => {
             <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
               <span className="text-2xl">{badgeData.badge.icon}</span>
               <div className="flex-1">
-                <div className="font-medium text-gray-800 text-sm">{badgeData.badge.name}</div>
-                <div className="text-xs text-gray-600">{badgeData.badge.description}</div>
+                <div className="font-medium text-book-leather text-sm">{badgeData.badge.name}</div>
+                <div className="text-xs text-forest-600">{badgeData.badge.description}</div>
               </div>
               <div className={`text-xs px-2 py-1 rounded-full ${getBadgeRarityColor(badgeData.badge.rarity)}`}>
                 {badgeData.badge.rarity}
