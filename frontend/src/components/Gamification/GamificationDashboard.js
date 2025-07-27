@@ -240,7 +240,7 @@ const GamificationDashboard = () => {
 
   const renderLeaderboard = () => (
     <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-xl font-semibold text-gray-800 mb-6">🏆 Weekly Leaderboard</h3>
+      <h3 className="text-xl font-semibold text-book-leather mb-6">🏆 Weekly Leaderboard</h3>
       
       {leaderboardData ? (
         <div className="space-y-3">
