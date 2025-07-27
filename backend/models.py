@@ -864,3 +864,129 @@ class PaginatedResponse(BaseModel):
     page: int
     per_page: int
     pages: int
+
+# Real-time Notifications System Models
+class NotificationType(str, Enum):
+    ACHIEVEMENT = "achievement"
+    XP_GAINED = "xp_gained"
+    BADGE_EARNED = "badge_earned" 
+    LEVEL_UP = "level_up"
+    STREAK_MILESTONE = "streak_milestone"
+    COMMUNITY_ACTIVITY = "community_activity"
+    LEARNING_REMINDER = "learning_reminder"
+    EMERGENCY_ALERT = "emergency_alert"
+    SYSTEM_UPDATE = "system_update"
+
+class NotificationPriority(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
+
+class Notification(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    notification_type: NotificationType
+    title: str
+    message: str
+    icon: Optional[str] = None
+    priority: NotificationPriority = NotificationPriority.NORMAL
+    action_url: Optional[str] = None  # URL to navigate when clicked
+    action_data: Dict[str, Any] = {}  # Additional data for the action
+    is_read: bool = False
+    is_seen: bool = False  # Seen but not necessarily clicked
+    expires_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    read_at: Optional[datetime] = None
+
+class NotificationSettings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    enabled: bool = True
+    notification_types: Dict[str, bool] = {
+        "achievement": True,
+        "xp_gained": True,
+        "badge_earned": True,
+        "level_up": True,
+        "streak_milestone": True,
+        "community_activity": True,
+        "learning_reminder": True,
+        "emergency_alert": True,
+        "system_update": True
+    }
+    quiet_hours_start: Optional[str] = None  # "22:00"
+    quiet_hours_end: Optional[str] = None    # "08:00"
+    max_notifications_per_day: int = 50
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Advanced Search & Filtering Models
+class SearchFilter(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    filter_name: str
+    filter_type: str  # "statute", "myth", "simulation", "learning_path", "community"
+    filter_criteria: Dict[str, Any] = {}
+    is_saved: bool = False
+    is_default: bool = False
+    use_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_used: Optional[datetime] = None
+
+class SearchHistory(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    search_query: str
+    search_type: str
+    filters_applied: Dict[str, Any] = {}
+    results_count: int = 0
+    clicked_result_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# Social Features Enhancement Models
+class UserProfile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    display_name: str
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+    location: Optional[str] = None
+    interests: List[str] = []
+    specialties: List[str] = []  # Legal areas of interest/expertise
+    privacy_settings: Dict[str, bool] = {
+        "show_level": True,
+        "show_badges": True,
+        "show_activity": True,
+        "allow_follow": True,
+        "show_location": False
+    }
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UserFollow(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    follower_id: str
+    following_id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ContentShare(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    content_id: str
+    content_type: str  # "statute", "myth", "simulation", "learning_path"
+    share_message: Optional[str] = None
+    share_platform: str = "internal"  # "internal", "twitter", "facebook", "email"
+    recipients: List[str] = []  # User IDs for internal shares
+    is_public: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ActivityFeed(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    activity_type: str  # "level_up", "badge_earned", "question_asked", "answer_provided"
+    activity_message: str
+    activity_data: Dict[str, Any] = {}
+    is_public: bool = True
+    likes_count: int = 0
+    comments_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
