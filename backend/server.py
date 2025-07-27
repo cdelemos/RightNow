@@ -3001,6 +3001,7 @@ async def generate_learning_path_suggestions(user_id: str, learning_patterns: li
         
         if relevance > 0.2:  # Only suggest if there's some relevance
             suggestions.append({
+                "user_id": user_id,
                 "suggestion_type": "learning_path",
                 "title": f"Learn: {path['title']}",
                 "description": path["description"],
