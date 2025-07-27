@@ -3597,6 +3597,234 @@ async def get_user_progress(current_user: User = Depends(get_current_user)):
         logging.error(f"Error getting user progress: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve user progress")
 
+# Mascot System endpoints
+@api_router.get("/mascot/greeting", response_model=APIResponse)
+async def get_mascot_greeting(current_user: User = Depends(get_current_user)):
+    """Get personalized mascot greeting based on user activity"""
+    try:
+        mascot_engine = MascotInteractionEngine()
+        
+        # Get user stats for context
+        user_stats = await db.user_stats.find_one({"user_id": current_user.id})
+        
+        # Determine greeting type based on user activity
+        user_last_login = current_user.last_activity or current_user.created_at
+        time_since_login = (datetime.utcnow() - user_last_login).days
+        
+        if time_since_login == 0:
+            # Same day login
+            recent_activity = "daily_return"
+        elif time_since_login <= 1:
+            # Recent return
+            recent_activity = "daily_return"
+        elif current_user.xp == 0:
+            # First time user
+            recent_activity = "first_login"
+        else:
+            # Regular return
+            recent_activity = "daily_return"
+        
+        # Get context-aware response
+        mascot_response = mascot_engine.get_context_aware_response(
+            user_stats=user_stats or {},
+            recent_activity=recent_activity
+        )
+        
+        # Save interaction
+        interaction = MascotInteraction(
+            user_id=current_user.id,
+            mascot_name=mascot_response["mascot_name"],
+            message=mascot_response["message"],
+            mood=MascotMood(mascot_response["mood"]),
+            action=MascotAction(mascot_response["action"]),
+            appearance=mascot_response["appearance"],
+            context={"recent_activity": recent_activity}
+        )
+        await db.mascot_interactions.insert_one(interaction.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Mascot greeting retrieved successfully",
+            data=mascot_response
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting mascot greeting: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get mascot greeting")
+
+@api_router.get("/mascot/study-tip", response_model=APIResponse)
+async def get_study_tip(current_user: User = Depends(get_current_user)):
+    """Get a random study tip from the mascot"""
+    try:
+        mascot_engine = MascotInteractionEngine()
+        mascot_response = mascot_engine.get_random_study_tip()
+        
+        # Save interaction
+        interaction = MascotInteraction(
+            user_id=current_user.id,
+            mascot_name=mascot_response["mascot_name"],
+            message=mascot_response["message"],
+            mood=MascotMood(mascot_response["mood"]),
+            action=MascotAction(mascot_response["action"]),
+            appearance=mascot_response["appearance"],
+            context={"type": "study_tip"}
+        )
+        await db.mascot_interactions.insert_one(interaction.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Study tip retrieved successfully",
+            data=mascot_response
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting study tip: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get study tip")
+
+@api_router.post("/mascot/celebrate", response_model=APIResponse)
+async def celebrate_achievement(
+    achievement_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Trigger mascot celebration for achievements"""
+    try:
+        mascot_engine = MascotInteractionEngine()
+        
+        achievement_type = achievement_data.get("type", "general")
+        
+        # Map achievement types to mascot actions
+        action_mapping = {
+            "level_up": MascotAction.CELEBRATE_LEVEL_UP,
+            "badge_earned": MascotAction.CELEBRATE_BADGE,
+            "streak_milestone": MascotAction.REMIND_STREAK,
+            "achievement_unlock": MascotAction.ACHIEVEMENT_UNLOCK,
+            "learning_path_complete": MascotAction.LEARNING_PATH_COMPLETE,
+            "first_question": MascotAction.FIRST_QUESTION
+        }
+        
+        action = action_mapping.get(achievement_type, MascotAction.CONGRATULATE)
+        
+        # Generate response with context
+        mascot_response = mascot_engine.get_mascot_response(
+            action=action,
+            context=achievement_data
+        )
+        
+        # Save interaction
+        interaction = MascotInteraction(
+            user_id=current_user.id,
+            mascot_name=mascot_response["mascot_name"],
+            message=mascot_response["message"],
+            mood=MascotMood(mascot_response["mood"]),
+            action=MascotAction(mascot_response["action"]),
+            appearance=mascot_response["appearance"],
+            context=achievement_data
+        )
+        await db.mascot_interactions.insert_one(interaction.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Celebration triggered successfully",
+            data=mascot_response
+        )
+        
+    except Exception as e:
+        logging.error(f"Error triggering celebration: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to trigger celebration")
+
+@api_router.get("/mascot/interactions", response_model=APIResponse)
+async def get_mascot_interactions(
+    limit: int = 20,
+    current_user: User = Depends(get_current_user)
+):
+    """Get user's recent mascot interactions"""
+    try:
+        interactions = await db.mascot_interactions.find(
+            {"user_id": current_user.id}
+        ).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        return APIResponse(
+            success=True,
+            message="Mascot interactions retrieved successfully",
+            data=[MascotInteraction(**interaction).dict() for interaction in interactions]
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting mascot interactions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get mascot interactions")
+
+@api_router.get("/mascot/settings", response_model=APIResponse)
+async def get_mascot_settings(current_user: User = Depends(get_current_user)):
+    """Get user's mascot settings"""
+    try:
+        settings = await db.mascot_settings.find_one({"user_id": current_user.id})
+        
+        if not settings:
+            # Create default settings
+            settings = MascotSettings(user_id=current_user.id)
+            await db.mascot_settings.insert_one(settings.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Mascot settings retrieved successfully",
+            data=MascotSettings(**settings).dict()
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting mascot settings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get mascot settings")
+
+@api_router.put("/mascot/settings", response_model=APIResponse)
+async def update_mascot_settings(
+    settings_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Update user's mascot settings"""
+    try:
+        # Update settings
+        settings_data["updated_at"] = datetime.utcnow()
+        
+        result = await db.mascot_settings.update_one(
+            {"user_id": current_user.id},
+            {"$set": settings_data},
+            upsert=True
+        )
+        
+        return APIResponse(
+            success=True,
+            message="Mascot settings updated successfully",
+            data={"updated": True}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error updating mascot settings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update mascot settings")
+
+@api_router.post("/mascot/mark-read", response_model=APIResponse)
+async def mark_interactions_read(
+    interaction_ids: List[str],
+    current_user: User = Depends(get_current_user)
+):
+    """Mark mascot interactions as read"""
+    try:
+        result = await db.mascot_interactions.update_many(
+            {
+                "user_id": current_user.id,
+                "id": {"$in": interaction_ids}
+            },
+            {"$set": {"is_read": True}}
+        )
+        
+        return APIResponse(
+            success=True,
+            message="Interactions marked as read",
+            data={"updated_count": result.modified_count}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error marking interactions as read: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to mark interactions as read")
+
 # Include the router in the main app
 app.include_router(api_router)
 
