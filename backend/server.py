@@ -3629,7 +3629,7 @@ async def get_mascot_greeting(current_user: User = Depends(get_current_user)):
         if recent_activity == "first_login":
             mascot_response = mascot_engine.get_mascot_response(MascotAction.WELCOME)
         elif recent_activity == "daily_return":
-            mascot_response = mascot_engine.get_mascot_response(MascotAction.WELCOME, MascotMood.CLEAR)
+            mascot_response = mascot_engine.get_mascot_response(MascotAction.WELCOME)
         else:
             mascot_response = mascot_engine.get_mascot_response(MascotAction.WELCOME)
         
