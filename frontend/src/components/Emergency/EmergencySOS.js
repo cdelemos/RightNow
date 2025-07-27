@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import CompassRoseEmergency from '../Book/CompassRoseEmergency';
+import SOSTray from './SOSTray';
 import axios from 'axios';
 
 const EmergencySOS = () => {
