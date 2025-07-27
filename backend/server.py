@@ -69,6 +69,42 @@ def clean_mongo_document(doc):
     else:
         return doc
 
+async def create_notification(
+    user_id: str,
+    notification_type: str,
+    title: str,
+    message: str,
+    icon: str = None,
+    priority: str = "normal",
+    action_url: str = None,
+    action_data: dict = None
+):
+    """Helper function to create notifications"""
+    try:
+        notification = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "notification_type": notification_type,
+            "title": title,
+            "message": message,
+            "icon": icon,
+            "priority": priority,
+            "action_url": action_url,
+            "action_data": action_data or {},
+            "is_read": False,
+            "is_seen": False,
+            "expires_at": None,
+            "created_at": datetime.utcnow(),
+            "read_at": None
+        }
+        
+        await db.notifications.insert_one(notification)
+        return notification["id"]
+        
+    except Exception as e:
+        logging.error(f"Error creating notification: {str(e)}")
+        return None
+
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
