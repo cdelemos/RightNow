@@ -12,8 +12,10 @@ const AIChat = () => {
   const [showStateModal, setShowStateModal] = useState(false);
   const [suggestedScripts, setSuggestedScripts] = useState([]);
   const [xpGained, setXpGained] = useState(0);
+  const [uplRiskWarning, setUplRiskWarning] = useState(null);
   const messagesEndRef = useRef(null);
   const { user } = useAuth();
+  const { analyzeQuery } = useUPLRiskDetection();
 
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
   const API = `${BACKEND_URL}/api`;
