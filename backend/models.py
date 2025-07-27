@@ -608,6 +608,57 @@ class XPTransaction(BaseModel):
     context: Dict[str, Any] = {}  # Additional context about the action
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+# Mascot System Models
+class MascotMood(str, Enum):
+    HAPPY = "happy"
+    EXCITED = "excited"
+    ENCOURAGING = "encouraging"
+    PROUD = "proud"
+    THOUGHTFUL = "thoughtful"
+    CONCERNED = "concerned"
+    CELEBRATORY = "celebratory"
+    MOTIVATIONAL = "motivational"
+
+class MascotAction(str, Enum):
+    WELCOME = "welcome"
+    CONGRATULATE = "congratulate"
+    ENCOURAGE = "encourage"
+    CELEBRATE_LEVEL_UP = "celebrate_level_up"
+    CELEBRATE_BADGE = "celebrate_badge"
+    REMIND_STREAK = "remind_streak"
+    INTRODUCE_FEATURE = "introduce_feature"
+    STUDY_TIP = "study_tip"
+    DAILY_GREETING = "daily_greeting"
+    ACHIEVEMENT_UNLOCK = "achievement_unlock"
+    LEARNING_PATH_COMPLETE = "learning_path_complete"
+    FIRST_QUESTION = "first_question"
+    EMERGENCY_SOS_INTRO = "emergency_sos_intro"
+
+class MascotInteraction(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    mascot_name: str = "Juris"
+    message: str
+    mood: MascotMood
+    action: MascotAction
+    appearance: Dict[str, Any] = {}  # emoji, expression, color, animation
+    context: Dict[str, Any] = {}
+    is_read: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class MascotSettings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    mascot_enabled: bool = True
+    show_daily_tips: bool = True
+    show_achievements: bool = True
+    show_streaks: bool = True
+    show_encouragement: bool = True
+    notification_frequency: str = "normal"  # "minimal", "normal", "frequent"
+    preferred_mood: Optional[MascotMood] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
 # API Response Models
 class APIResponse(BaseModel):
     success: bool
