@@ -2873,6 +2873,31 @@ class BackendTester:
         self.test_memory_persistence_and_reference_tracking()
         self.test_ai_memory_edge_cases()
         
+        # NEW MINOR ENHANCEMENTS TESTS
+        print("\n" + "=" * 80)
+        print("🔔 TESTING MINOR ENHANCEMENTS - REAL-TIME NOTIFICATIONS SYSTEM")
+        print("=" * 80)
+        self.test_notifications_system()
+        self.test_notification_creation_integration()
+        
+        print("\n" + "=" * 80)
+        print("🔍 TESTING MINOR ENHANCEMENTS - ADVANCED SEARCH FILTERS")
+        print("=" * 80)
+        self.test_search_filters_system()
+        self.test_protection_type_filtering()
+        
+        print("\n" + "=" * 80)
+        print("👥 TESTING MINOR ENHANCEMENTS - SOCIAL FEATURES")
+        print("=" * 80)
+        self.test_user_profiles_system()
+        self.test_content_sharing_system()
+        
+        print("\n" + "=" * 80)
+        print("🎯 TESTING MINOR ENHANCEMENTS - CORE SYSTEM INTEGRATION")
+        print("=" * 80)
+        self.test_protection_profile_system()
+        self.test_json_serialization()
+        
         # Summary
         print("\n" + "=" * 70)
         print("📊 TEST SUMMARY")
