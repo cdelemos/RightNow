@@ -3014,7 +3014,7 @@ async def search_statutes_filtered(
 async def get_simulations_filtered(
     protection_type: Optional[str] = None,
     category: Optional[SimulationCategory] = None,
-    difficulty: Optional[DifficultyLevel] = None,
+    difficulty: Optional[int] = None,
     page: int = 1,
     per_page: int = 20,
     current_user: User = Depends(get_current_user)
@@ -3027,7 +3027,7 @@ async def get_simulations_filtered(
         if category:
             query["category"] = category.value
         if difficulty:
-            query["difficulty_level"] = difficulty.value
+            query["difficulty_level"] = difficulty
         
         # Filter by protection type if provided
         if protection_type:
