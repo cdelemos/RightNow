@@ -483,12 +483,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Book-themed UI redesign verification"
-    - "Backend API compatibility with new frontend"
-    - "Authentication flow with new book layout"
-    - "All existing features working with book theme"
+    - "Purpose-Driven XP Unlocks Frontend testing"
+    - "Trophy Wall interface functionality"
+    - "Unlock notification system"
+    - "Integration with existing book-themed UI"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
   backend_testing_completed: true
   backend_compatibility_verified: true
