@@ -37,39 +37,110 @@
     }
 }
 
-/* Custom animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+/* Book theme animations and effects */
+@keyframes pageFlip {
+  0% { transform: rotateY(0); }
+  50% { transform: rotateY(-90deg); }
+  100% { transform: rotateY(0); }
 }
 
-@keyframes bounce-soft {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+@keyframes goldGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.6); }
 }
 
-@keyframes fade-in {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
+@keyframes paperRipple {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.05); opacity: 0; }
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+@keyframes ribbonFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(1deg); }
 }
 
-.animate-bounce-soft {
-  animation: bounce-soft 2s ease-in-out infinite;
+/* Book texture backgrounds */
+.book-texture {
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 108, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(120, 119, 108, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 119, 108, 0.03) 0%, transparent 50%);
 }
 
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out;
+.parchment-texture {
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.02) 2px,
+      rgba(0, 0, 0, 0.02) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.02) 2px,
+      rgba(0, 0, 0, 0.02) 4px
+    );
 }
 
-/* Custom shadow utilities */
-.shadow-sage {
-  box-shadow: 0 4px 6px -1px rgba(113, 113, 122, 0.1), 0 2px 4px -1px rgba(113, 113, 122, 0.06);
+/* Animation classes */
+.animate-page-flip {
+  animation: pageFlip 0.6s ease-in-out;
 }
 
-.shadow-sage-lg {
-  box-shadow: 0 10px 15px -3px rgba(113, 113, 122, 0.1), 0 4px 6px -2px rgba(113, 113, 122, 0.05);
+.animate-gold-glow {
+  animation: goldGlow 2s ease-in-out infinite;
+}
+
+.animate-paper-ripple {
+  animation: paperRipple 0.8s ease-out;
+}
+
+.animate-ribbon-float {
+  animation: ribbonFloat 3s ease-in-out infinite;
+}
+
+/* Custom transform utilities */
+.rotateY-0 { transform: rotateY(0deg); }
+.rotateY-180 { transform: rotateY(180deg); }
+
+/* Perspective for 3D effects */
+.perspective-1000 { perspective: 1000px; }
+
+/* Book spine shadow */
+.book-spine-shadow {
+  box-shadow: 
+    inset 5px 0 10px -5px rgba(0, 0, 0, 0.2),
+    inset -5px 0 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* Page curl effect */
+.page-curl {
+  position: relative;
+}
+
+.page-curl::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-left: 30px solid transparent;
+  border-bottom: 30px solid rgba(0, 0, 0, 0.1);
+  z-index: 1;
+}
+
+.page-curl::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-left: 30px solid #fdfcf8;
+  border-bottom: 30px solid transparent;
+  z-index: 2;
 }
