@@ -322,8 +322,8 @@ const GamificationDashboard = () => {
             {xpHistory.recent_transactions.slice(0, 10).map((transaction, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
-                  <div className="font-medium text-gray-800 text-sm">{transaction.description}</div>
-                  <div className="text-xs text-gray-600">
+                  <div className="font-medium text-book-leather text-sm">{transaction.description}</div>
+                  <div className="text-xs text-forest-600">
                     {new Date(transaction.created_at).toLocaleDateString()}
                   </div>
                 </div>
