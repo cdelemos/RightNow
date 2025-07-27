@@ -101,8 +101,8 @@ const GamificationDashboard = () => {
       {/* Level Progress Card */}
       <div className="bg-white rounded-xl shadow-lg p-6 col-span-full lg:col-span-2">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-gray-800">Level Progress</h3>
-          <div className="text-sage-600 font-bold">
+          <h3 className="text-xl font-semibold text-book-leather">Level Progress</h3>
+          <div className="text-forest-600 font-bold">
             Level {levelProgress?.current_level || 1}
           </div>
         </div>
