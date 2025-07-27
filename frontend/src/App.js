@@ -20,6 +20,7 @@ import GamificationDashboard from "./components/Gamification/GamificationDashboa
 import GamificationWidget from "./components/Gamification/GamificationWidget";
 import MascotWidget from "./components/Mascot/MascotWidget";
 import TrophyWall from "./components/Unlocks/TrophyWall";
+import AboutUs from "./components/About/AboutUs";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
