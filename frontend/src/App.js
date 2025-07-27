@@ -11,6 +11,7 @@ import AIChat from "./components/AI/AIChat";
 import MythFeed from "./components/Myths/MythFeed";
 import SimulationPlayer from "./components/Simulations/SimulationPlayer";
 import CommunityQA from "./components/Community/CommunityQA";
+import LearningPaths from "./components/Learning/LearningPaths";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
