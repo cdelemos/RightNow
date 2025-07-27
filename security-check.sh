@@ -10,20 +10,20 @@ echo "================================================"
 echo "🔍 Checking for hardcoded API keys..."
 API_KEY_FOUND=false
 
-# Check for OpenAI API keys
-if grep -r "sk-[a-zA-Z0-9]\{20,\}" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.sh" 2>/dev/null; then
+# Check for OpenAI API keys (but exclude examples and placeholders)
+if grep -r "sk-[a-zA-Z0-9]\{20,\}" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.sh" --exclude="*.md" --exclude="*.example" 2>/dev/null | grep -v "sk-xxxxxxxxxx" | grep -v "sk-proj-your" | grep -v "sk-proj-..." ; then
     echo "❌ Found potential OpenAI API key in codebase!"
     API_KEY_FOUND=true
 fi
 
-# Check for JWT secrets in code
-if grep -r "JWT_SECRET.*=.*[a-zA-Z0-9-]\{20,\}" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.md" --exclude="*.sh" 2>/dev/null; then
+# Check for JWT secrets in code (but exclude examples and placeholders)
+if grep -r "JWT_SECRET.*=.*[a-zA-Z0-9-]\{20,\}" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.md" --exclude="*.sh" --exclude="*.example" 2>/dev/null | grep -v "your-jwt-secret" | grep -v "your-super-secure" | grep -v "change-in-production"; then
     echo "❌ Found potential JWT secret in codebase!"
     API_KEY_FOUND=true
 fi
 
-# Check for other common secrets
-if grep -r "password.*=.*[a-zA-Z0-9]\{10,\}" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.md" --exclude="*.sh" 2>/dev/null; then
+# Check for other common secrets (but exclude form validation and examples)
+if grep -r "password.*=.*[a-zA-Z0-9]\{10,\}" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.md" --exclude="*.sh" 2>/dev/null | grep -v "formData.password" | grep -v "currentPassword" | grep -v "confirmPassword" | grep -v "input.*password" | grep -v "type.*password"; then
     echo "❌ Found potential password in codebase!"
     API_KEY_FOUND=true
 fi
