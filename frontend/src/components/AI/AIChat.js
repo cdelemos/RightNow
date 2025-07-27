@@ -141,6 +141,14 @@ const AIChat = () => {
         });
       }
 
+      // Track interaction for memory and suggestions
+      await trackInteraction(currentMessage, data);
+
+      // Store memory context if valuable information is exchanged
+      if (data.confidence_score > 0.7) {
+        await storeMemoryContext(currentMessage, data);
+      }
+
     } catch (error) {
       console.error('Failed to send message:', error);
       const errorMessage = {
