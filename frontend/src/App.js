@@ -116,9 +116,20 @@ function App() {
                 <AIChat />
               </ProtectedRoute>
             } />
+            <Route path="/emergency-contacts" element={
+              <ProtectedRoute>
+                <EmergencyContacts />
+              </ProtectedRoute>
+            } />
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" />} />
+          </Routes>
+          
+          {/* Emergency SOS - Always available when authenticated */}
+          <ProtectedRoute>
+            <EmergencySOS />
+          </ProtectedRoute>
           </Routes>
         </BrowserRouter>
       </div>
