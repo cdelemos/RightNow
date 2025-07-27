@@ -7,12 +7,12 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
   const [mascotState, setMascotState] = useState({
     isVisible: true,
     message: '',
-    mood: 'happy',
+    mood: 'protective',
     appearance: {
-      emoji: '🦉',
-      expression: '^v^',
-      color: '#8B4513',
-      animation: 'bounce'
+      emoji: '⚖️',
+      expression: '🛡️',
+      color: '#2B4C7E',
+      animation: 'steady'
     },
     isAnimating: false,
     showMessage: false,
