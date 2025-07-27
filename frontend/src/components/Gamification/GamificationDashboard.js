@@ -248,7 +248,7 @@ const GamificationDashboard = () => {
             <div
               key={entry.user.id}
               className={`flex items-center justify-between p-4 rounded-lg ${
-                entry.user.id === user?.id ? 'bg-sage-50 border-2 border-sage-200' : 'bg-gray-50'
+                entry.user.id === user?.id ? 'bg-forest-50 border-2 border-forest-200' : 'bg-gray-50'
               }`}
             >
               <div className="flex items-center space-x-4">
