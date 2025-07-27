@@ -83,10 +83,10 @@ const MemoryContext = ({ sessionId, onMemoryUpdate }) => {
     return 'Recently';
   };
 
-  // Expose function to parent component
-  React.useImperativeHandle(React.forwardRef(() => ({
-    storeMemoryContext
-  })), []);
+  // No need for forwardRef imperative handle since we're not using it
+  // React.useImperativeHandle(React.forwardRef(() => ({
+  //   storeMemoryContext
+  // })), []);
 
   if (loading) {
     return (
