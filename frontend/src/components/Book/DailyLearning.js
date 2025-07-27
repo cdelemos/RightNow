@@ -12,11 +12,23 @@ const DailyLearning = () => {
   const [dailyLesson, setDailyLesson] = useState(null);
   const [dailyMyth, setDailyMyth] = useState(null);
   const [quickScript, setQuickScript] = useState(null);
+  const [showPictureFrames, setShowPictureFrames] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [showSignaturePage, setShowSignaturePage] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDailyContent();
+    checkForSignaturePage();
   }, []);
+
+  const checkForSignaturePage = () => {
+    const pledge = localStorage.getItem('userPledge');
+    if (!pledge && user?.level >= 3) {
+      // Show signature page for users who've completed 3+ lessons
+      setShowSignaturePage(true);
+    }
+  };
 
   const fetchDailyContent = async () => {
     try {
