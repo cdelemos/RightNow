@@ -14,8 +14,9 @@ const Navbar = () => {
     { name: 'Q&A Community', href: '/questions', icon: '💬', color: 'bg-purple-100 text-purple-700' },
     { name: 'Legal Myths', href: '/myths', icon: '🎯', color: 'bg-red-100 text-red-700' },
     { name: 'Simulations', href: '/simulations', icon: '🎮', color: 'bg-yellow-100 text-yellow-700' },
-    { name: 'Learning Paths', href: '/learning', icon: '🎓', color: 'bg-emerald-100 text-emerald-700' },
+    { name: 'Learning Paths', href: '/learning-paths', icon: '🎓', color: 'bg-emerald-100 text-emerald-700' },
     { name: 'AI Assistant', href: '/ai-chat', icon: '🤖', color: 'bg-indigo-100 text-indigo-700' },
+    { name: 'Emergency SOS', href: '/emergency-contacts', icon: '🚨', color: 'bg-red-100 text-red-700' },
   ];
 
   const handleLogout = () => {
