@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import TableOfContents from './TableOfContents';
 import ChapterTabs from './ChapterTabs';
 import BookmarkRibbon from './BookmarkRibbon';
+import MarginScribbles from './MarginScribbles';
 
 const BookContainer = ({ children }) => {
+  const { user } = useAuth();
   const [isFlipping, setIsFlipping] = useState(false);
   const [showTableOfContents, setShowTableOfContents] = useState(false);
   const location = useLocation();
@@ -19,6 +22,11 @@ const BookContainer = ({ children }) => {
   const handlePageFlip = () => {
     setIsFlipping(true);
     setTimeout(() => setIsFlipping(false), 600);
+  };
+
+  const getProgressRibbon = () => {
+    const progress = (user?.xp || 0) / ((user?.level || 1) * 100) * 100;
+    return Math.min(Math.max(progress, 0), 100);
   };
 
   return (
@@ -45,6 +53,14 @@ const BookContainer = ({ children }) => {
           >
             📖 Contents
           </button>
+          
+          {/* Level Indicator - Fixed to book */}
+          <div className="absolute top-6 right-6 z-30 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg border border-forest-200">
+            <div className="text-center">
+              <div className="text-sm font-bold text-book-leather">Level {user?.level || 1}</div>
+              <div className="text-xs text-forest-600">{user?.xp || 0} XP</div>
+            </div>
+          </div>
           
           {/* Main Content Area */}
           <div className="relative ml-28 bg-book-page min-h-[85vh] flex">
@@ -87,10 +103,13 @@ const BookContainer = ({ children }) => {
                       </div>
                     </div>
                     <div className="w-full bg-gold-200 rounded-full h-2 mb-2">
-                      <div className="bg-gradient-to-r from-gold-400 to-gold-600 h-2 rounded-full" style={{ width: '60%' }}></div>
+                      <div 
+                        className="bg-gradient-to-r from-gold-400 to-gold-600 h-2 rounded-full transition-all duration-1000" 
+                        style={{ width: `${getProgressRibbon()}%` }}
+                      ></div>
                     </div>
                     <div className="text-xs text-forest-500">
-                      Level 1 • 60% Complete
+                      Level {user?.level || 1} • {Math.round(getProgressRibbon())}% Complete
                     </div>
                   </div>
                   
@@ -111,7 +130,7 @@ const BookContainer = ({ children }) => {
                 </div>
                 
                 {/* Study Tips Section */}
-                <div className="bg-gradient-to-br from-forest-50 to-forest-100 rounded-lg p-4 border border-forest-200">
+                <div className="bg-gradient-to-br from-forest-50 to-forest-100 rounded-lg p-4 border border-forest-200 mb-6">
                   <h3 className="font-bold text-book-leather mb-2 flex items-center">
                     <span className="mr-2">💡</span>
                     Study Tip
@@ -122,6 +141,15 @@ const BookContainer = ({ children }) => {
                   <div className="text-xs text-forest-500 mt-2">
                     — Daily Learning Reminder
                   </div>
+                </div>
+                
+                {/* Legal Quotes - Moved from right page */}
+                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 border border-gold-200">
+                  <h3 className="font-bold text-book-leather mb-2 flex items-center">
+                    <span className="mr-2">📝</span>
+                    Legal Wisdom
+                  </h3>
+                  <MarginScribbles position="embedded" context="general" />
                 </div>
               </div>
               
