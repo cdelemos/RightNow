@@ -104,10 +104,20 @@ const Dashboard = () => {
       title: 'Learning Paths',
       description: 'Structured learning journeys', 
       icon: '🎓',
-      href: '/learning',
+      href: '/learning-paths',
       gradient: 'from-sage-400 to-sage-600',
       bgGradient: 'from-sage-50 to-sage-100',
       textColor: 'text-sage-700',
+      available: true
+    },
+    {
+      title: 'Emergency SOS',
+      description: 'Critical safety tools & alerts', 
+      icon: '🚨',
+      href: '/emergency-contacts',
+      gradient: 'from-red-400 to-red-600',
+      bgGradient: 'from-red-50 to-red-100',
+      textColor: 'text-red-700',
       available: true
     }
   ];
