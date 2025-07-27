@@ -368,6 +368,10 @@ const EmergencySOS = () => {
     <>
       {renderSOSButton()}
       {isSOSOpen && renderSOSModal()}
+      <CompassRoseEmergency 
+        isOpen={showCompassRose} 
+        onClose={() => setShowCompassRose(false)} 
+      />
     </>
   );
 };
