@@ -3657,7 +3657,7 @@ async def get_emergency_alerts(
     return APIResponse(
         success=True,
         message="Emergency alerts retrieved successfully",
-        data=[EmergencyAlert(**alert) for alert in alerts]
+        data=[EmergencyAlert(**alert).dict() for alert in alerts]
     )
 
 @api_router.put("/emergency/alerts/{alert_id}/resolve", response_model=APIResponse)
