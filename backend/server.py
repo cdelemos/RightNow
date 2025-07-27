@@ -4300,6 +4300,9 @@ async def check_protection_unlock(
                 }
             )
         
+    except HTTPException:
+        # Re-raise HTTPException to let FastAPI handle it properly
+        raise
     except Exception as e:
         logging.error(f"Error checking protection unlock: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to check protection unlock")
