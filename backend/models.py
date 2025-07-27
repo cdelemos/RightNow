@@ -247,39 +247,93 @@ class AnswerVote(BaseModel):
     vote_type: str  # "upvote" or "downvote"
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-# Learning Path Models
+# Enhanced Learning Path Models
+class LearningPathType(str, Enum):
+    TENANT_PROTECTION = "tenant_protection"
+    IMMIGRATION_RIGHTS = "immigration_rights"
+    STUDENT_RIGHTS = "student_rights"
+    CRIMINAL_DEFENSE = "criminal_defense" 
+    EMPLOYMENT_RIGHTS = "employment_rights"
+    CONSUMER_PROTECTION = "consumer_protection"
+    PROTEST_RIGHTS = "protest_rights"
+    FAMILY_LAW = "family_law"
+    GENERAL_LEGAL_LITERACY = "general_legal_literacy"
+
+class LearningPathNode(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: str
+    node_type: str  # "myth", "simulation", "qa_topic", "ai_session", "assessment"
+    content_id: Optional[str] = None  # Reference to specific content
+    xp_required: int = 0  # XP needed to unlock this node
+    xp_reward: int = 20  # XP awarded for completing this node
+    prerequisites: List[str] = []  # Node IDs that must be completed first
+    estimated_minutes: int = 5
+    difficulty_level: int = 1  # 1-5 scale
+    is_locked: bool = True
+    completion_criteria: Dict[str, Any] = {}  # Specific requirements to complete
+
 class LearningPath(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: str
-    target_user_types: List[UserType] = []
-    difficulty_level: int = 1  # 1-5 scale
-    estimated_duration: int  # in hours
-    modules: List[Dict[str, Any]] = []  # Module structure with content references
+    path_type: LearningPathType
+    target_audience: List[str] = []  # ["undergraduate", "graduate", "general", etc.]
+    estimated_duration: int  # Total estimated minutes
+    difficulty_level: int = 1  # 1-5 scale overall difficulty
+    learning_objectives: List[str] = []
+    path_nodes: List[LearningPathNode] = []
+    start_node_id: str
+    total_xp_reward: int = 0
     prerequisites: List[str] = []  # Other learning path IDs
+    tags: List[str] = []
+    is_active: bool = True
     created_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    is_active: bool = True
-
-class LearningPathCreate(BaseModel):
-    title: str
-    description: str
-    target_user_types: List[UserType] = []
-    difficulty_level: int = 1
-    estimated_duration: int
-    modules: List[Dict[str, Any]] = []
-    prerequisites: List[str] = []
 
 class UserLearningProgress(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     learning_path_id: str
-    current_module: int = 0
-    completed_modules: List[int] = []
+    current_node_id: Optional[str] = None
+    completed_nodes: List[str] = []  # Node IDs completed
+    total_xp_earned: int = 0
     progress_percentage: float = 0.0
     started_at: datetime = Field(default_factory=datetime.utcnow)
-    last_accessed: datetime = Field(default_factory=datetime.utcnow)
+    last_activity: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
+    is_completed: bool = False
+    
+class UserPersonalization(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    primary_interests: List[LearningPathType] = []  # User's main legal interests
+    user_situation: List[str] = []  # ["renter", "student", "immigrant", "protester", etc.]
+    learning_style: str = "balanced"  # "visual", "interactive", "reading", "balanced"
+    weekly_time_commitment: int = 60  # minutes per week
+    preferred_difficulty: int = 2  # 1-5 scale
+    content_preferences: Dict[str, bool] = {}  # {"myths": True, "simulations": True, etc.}
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class LearningPathCreate(BaseModel):
+    title: str
+    description: str
+    path_type: LearningPathType
+    target_audience: List[str] = []
+    estimated_duration: int
+    difficulty_level: int = 1
+    learning_objectives: List[str] = []
+    tags: List[str] = []
+
+class LearningRecommendation(BaseModel):
+    content_type: str  # "learning_path", "myth", "simulation", "qa_topic"
+    content_id: str
+    title: str
+    description: str
+    confidence_score: float  # 0.0-1.0
+    reason: str  # Why this is recommended
+    estimated_time: int  # minutes
+    xp_potential: int
 
 # AI Query Models (Legacy)
 class AIQueryCreate(BaseModel):
