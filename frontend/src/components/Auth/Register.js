@@ -73,20 +73,20 @@ const Register = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sage-50 to-emerald-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-forest-50 via-book-page to-forest-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
-          <div className="text-center bg-white rounded-3xl shadow-sage-lg p-8 border border-sage-100">
+          <div className="text-center bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-forest-200/50 p-8 border border-forest-100">
             <div className="mx-auto h-20 w-20 flex items-center justify-center rounded-full bg-emerald-100 mb-6 animate-bounce-soft">
               <span className="text-4xl">🎉</span>
             </div>
-            <h2 className="text-3xl font-bold text-sage-800 mb-4">
+            <h2 className="text-3xl font-bold text-forest-800 mb-4">
               Welcome aboard! 🚀
             </h2>
-            <p className="text-sage-600 mb-6">
+            <p className="text-forest-600 mb-6">
               Your account has been created successfully. Get ready to level up your legal knowledge!
             </p>
-            <div className="inline-flex items-center bg-sage-100 rounded-xl px-4 py-2">
-              <span className="animate-pulse text-sage-700">Redirecting to login...</span>
+            <div className="inline-flex items-center bg-forest-100 rounded-xl px-4 py-2">
+              <span className="animate-pulse text-forest-700">Redirecting to login...</span>
             </div>
           </div>
         </div>
