@@ -172,9 +172,11 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
   const getAnimationClass = () => {
     if (mascotState.isAnimating) {
       switch (mascotState.appearance.animation) {
-        case 'bounce': return 'animate-bounce';
-        case 'pulse': return 'animate-pulse';
-        case 'celebration': return 'animate-bounce';
+        case 'steady': return 'animate-none';
+        case 'focus': return 'animate-pulse';
+        case 'strength': return 'animate-bounce';
+        case 'alert': return 'animate-pulse';
+        case 'urgent': return 'animate-bounce';
         default: return 'animate-pulse';
       }
     }
