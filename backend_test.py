@@ -2280,6 +2280,18 @@ class BackendTester:
         self.test_learning_path_recommendations()
         self.test_learning_path_database_initialization()
         
+        # Emergency SOS Feature tests (CRITICAL SAFETY SYSTEM)
+        print("\n🚨 EMERGENCY SOS FEATURE TESTS - CRITICAL SAFETY SYSTEM 🚨")
+        print("-" * 60)
+        self.test_emergency_contacts_crud()
+        self.test_emergency_alert_system()
+        self.test_emergency_alerts_retrieval()
+        self.test_emergency_alert_resolution()
+        self.test_emergency_quick_tools()
+        self.test_emergency_guidance_system()
+        self.test_emergency_authentication_requirements()
+        self.test_emergency_contact_deletion()
+        
         # Summary
         print("\n" + "=" * 70)
         print("📊 TEST SUMMARY")
