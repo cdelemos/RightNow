@@ -3230,8 +3230,10 @@ class BackendTester:
                 all_protections = available_protections + [up.get("protection", {}) for up in unlocked_protections]
                 protection_types = set(p.get("protection_type") for p in all_protections if p.get("protection_type"))
                 
+                # Convert to uppercase for comparison (database stores lowercase)
+                protection_types_upper = set(pt.upper() for pt in protection_types)
                 expected_types = ["RENTER", "PROTESTER", "WORKER", "STUDENT", "DISABLED", "UNDOCUMENTED", "GENERAL"]
-                found_types = [t for t in expected_types if t in protection_types]
+                found_types = [t for t in expected_types if t in protection_types_upper]
                 
                 if len(found_types) >= 5:
                     self.log_test("Protection Types Diversity", True, 
