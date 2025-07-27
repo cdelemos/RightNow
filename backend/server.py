@@ -3102,6 +3102,500 @@ This alert was sent automatically by the RightNow Legal Education Platform.
         logging.error(f"Failed to send emergency notification: {str(e)}")
         return False
 
+# Full Gamification System Integration endpoints
+@api_router.get("/gamification/dashboard", response_model=APIResponse)
+async def get_gamification_dashboard(current_user: User = Depends(get_current_user)):
+    """Get comprehensive gamification dashboard data"""
+    try:
+        # Get user stats
+        user_stats = await db.user_stats.find_one({"user_id": current_user.id})
+        if not user_stats:
+            # Create initial stats
+            user_stats = UserStats(user_id=current_user.id).dict()
+            await db.user_stats.insert_one(user_stats)
+        
+        # Get user badges
+        user_badges = await db.user_badges.find({"user_id": current_user.id}).to_list(100)
+        badge_details = []
+        for user_badge in user_badges:
+            badge = await db.badges.find_one({"id": user_badge["badge_id"]})
+            if badge:
+                badge_details.append({
+                    "badge": Badge(**badge).dict(),
+                    "earned_at": user_badge["earned_at"]
+                })
+        
+        # Get user achievements
+        user_achievements = await db.user_achievements.find({"user_id": current_user.id}).to_list(100)
+        
+        # Get streaks
+        streaks = await db.streaks.find({"user_id": current_user.id}).to_list(10)
+        
+        # Get recent XP transactions
+        recent_xp = await db.xp_transactions.find({"user_id": current_user.id}).sort("created_at", -1).limit(10).to_list(10)
+        
+        # Get leaderboard position
+        weekly_leaderboard = await db.leaderboards.find_one({
+            "leaderboard_type": "weekly_xp",
+            "is_active": True
+        })
+        
+        user_rank = None
+        if weekly_leaderboard:
+            user_rankings = weekly_leaderboard.get("user_rankings", [])
+            user_entry = next((entry for entry in user_rankings if entry["user_id"] == current_user.id), None)
+            if user_entry:
+                user_rank = {
+                    "rank": user_entry["rank"],
+                    "score": user_entry["score"],
+                    "total_players": len(user_rankings)
+                }
+        
+        # Calculate next level progress
+        current_xp = current_user.xp
+        current_level = current_user.level
+        next_level = current_level + 1
+        next_level_xp = calculate_xp_for_level(next_level)
+        current_level_xp = calculate_xp_for_level(current_level)
+        
+        level_progress = {
+            "current_level": current_level,
+            "next_level": next_level,
+            "current_xp": current_xp,
+            "next_level_xp": next_level_xp,
+            "current_level_xp": current_level_xp,
+            "progress_percentage": min(100, ((current_xp - current_level_xp) / (next_level_xp - current_level_xp)) * 100) if next_level <= 50 else 100
+        }
+        
+        return APIResponse(
+            success=True,
+            message="Gamification dashboard retrieved successfully",
+            data={
+                "user_stats": UserStats(**user_stats).dict(),
+                "level_progress": level_progress,
+                "badges": badge_details,
+                "achievements": user_achievements,
+                "streaks": streaks,
+                "recent_xp": recent_xp,
+                "leaderboard_position": user_rank
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting gamification dashboard: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve gamification dashboard")
+
+def calculate_xp_for_level(level: int) -> int:
+    """Calculate XP required for a specific level"""
+    if level <= 1:
+        return 0
+    elif level == 2:
+        return 100
+    elif level == 3:
+        return 250
+    elif level == 4:
+        return 450
+    elif level == 5:
+        return 700
+    elif level == 6:
+        return 1000
+    else:
+        # For levels 7+: 1000 + (level - 6) * 150
+        return 1000 + (level - 6) * 150
+
+@api_router.get("/gamification/leaderboard", response_model=APIResponse)
+async def get_leaderboard(
+    leaderboard_type: str = "weekly_xp",
+    limit: int = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """Get leaderboard data"""
+    try:
+        leaderboard = await db.leaderboards.find_one({
+            "leaderboard_type": leaderboard_type,
+            "is_active": True
+        })
+        
+        if not leaderboard:
+            return APIResponse(
+                success=True,
+                message="No active leaderboard found",
+                data={"rankings": [], "user_rank": None}
+            )
+        
+        # Get user details for rankings
+        user_rankings = leaderboard.get("user_rankings", [])[:limit]
+        enriched_rankings = []
+        
+        for entry in user_rankings:
+            user = await db.users.find_one({"id": entry["user_id"]})
+            if user:
+                enriched_rankings.append({
+                    "rank": entry["rank"],
+                    "score": entry["score"],
+                    "user": {
+                        "id": user["id"],
+                        "username": user["username"],
+                        "level": user.get("level", 1),
+                        "badges": user.get("badges", [])
+                    }
+                })
+        
+        # Find current user's position
+        user_entry = next((entry for entry in user_rankings if entry["user_id"] == current_user.id), None)
+        user_rank = None
+        if user_entry:
+            user_rank = {
+                "rank": user_entry["rank"],
+                "score": user_entry["score"],
+                "total_players": len(user_rankings)
+            }
+        
+        return APIResponse(
+            success=True,
+            message="Leaderboard retrieved successfully",
+            data={
+                "leaderboard_type": leaderboard_type,
+                "period_start": leaderboard["period_start"],
+                "period_end": leaderboard["period_end"],
+                "rankings": enriched_rankings,
+                "user_rank": user_rank
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting leaderboard: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve leaderboard")
+
+@api_router.get("/gamification/badges", response_model=APIResponse)
+async def get_available_badges(
+    category: Optional[str] = None,
+    earned_only: bool = False,
+    current_user: User = Depends(get_current_user)
+):
+    """Get available badges and user's earned badges"""
+    try:
+        # Get all badges
+        query = {}
+        if category:
+            query["category"] = category
+        
+        all_badges = await db.badges.find(query).to_list(100)
+        
+        # Get user's earned badges
+        user_badges = await db.user_badges.find({"user_id": current_user.id}).to_list(100)
+        earned_badge_ids = [ub["badge_id"] for ub in user_badges]
+        
+        # Enrich badges with earned status
+        enriched_badges = []
+        for badge in all_badges:
+            badge_dict = Badge(**badge).dict()
+            is_earned = badge["id"] in earned_badge_ids
+            badge_dict["is_earned"] = is_earned
+            
+            if is_earned:
+                user_badge = next((ub for ub in user_badges if ub["badge_id"] == badge["id"]), None)
+                if user_badge:
+                    badge_dict["earned_at"] = user_badge["earned_at"]
+            
+            if not earned_only or is_earned:
+                enriched_badges.append(badge_dict)
+        
+        # Sort by earned status and rarity
+        enriched_badges.sort(key=lambda x: (not x["is_earned"], x["rarity"]))
+        
+        return APIResponse(
+            success=True,
+            message="Badges retrieved successfully",
+            data={
+                "badges": enriched_badges,
+                "earned_count": len(earned_badge_ids),
+                "total_count": len(all_badges)
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting badges: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve badges")
+
+@api_router.get("/gamification/achievements", response_model=APIResponse)
+async def get_achievements(current_user: User = Depends(get_current_user)):
+    """Get user's achievements and progress"""
+    try:
+        user_achievements = await db.user_achievements.find({"user_id": current_user.id}).to_list(100)
+        
+        # Define achievement templates
+        achievement_templates = {
+            "read_100_statutes": {
+                "name": "Century Reader",
+                "description": "Read 100 legal statutes",
+                "icon": "📚",
+                "target": 100,
+                "xp_reward": 100
+            },
+            "ask_50_questions": {
+                "name": "Inquisitive Mind",
+                "description": "Ask 50 questions in the community",
+                "icon": "❓",
+                "target": 50,
+                "xp_reward": 75
+            },
+            "complete_10_simulations": {
+                "name": "Simulation Master",
+                "description": "Complete 10 legal simulations",
+                "icon": "🎭",
+                "target": 10,
+                "xp_reward": 150
+            },
+            "earn_1000_xp": {
+                "name": "XP Collector",
+                "description": "Earn 1000 total XP",
+                "icon": "⭐",
+                "target": 1000,
+                "xp_reward": 100
+            },
+            "daily_streak_30": {
+                "name": "Dedicated Learner",
+                "description": "Maintain a 30-day learning streak",
+                "icon": "🔥",
+                "target": 30,
+                "xp_reward": 200
+            }
+        }
+        
+        # Enrich achievements with template data
+        enriched_achievements = []
+        for achievement in user_achievements:
+            template = achievement_templates.get(achievement["achievement_id"])
+            if template:
+                achievement_dict = {
+                    "id": achievement["achievement_id"],
+                    "name": template["name"],
+                    "description": template["description"],
+                    "icon": template["icon"],
+                    "target": template["target"],
+                    "current_progress": achievement.get("current_progress", 0),
+                    "is_completed": achievement.get("is_completed", False),
+                    "completed_at": achievement.get("completed_at"),
+                    "xp_reward": template["xp_reward"],
+                    "progress_percentage": min(100, (achievement.get("current_progress", 0) / template["target"]) * 100)
+                }
+                enriched_achievements.append(achievement_dict)
+        
+        # Add missing achievements (not started yet)
+        existing_ids = [a["achievement_id"] for a in user_achievements]
+        for achievement_id, template in achievement_templates.items():
+            if achievement_id not in existing_ids:
+                achievement_dict = {
+                    "id": achievement_id,
+                    "name": template["name"],
+                    "description": template["description"],
+                    "icon": template["icon"],
+                    "target": template["target"],
+                    "current_progress": 0,
+                    "is_completed": False,
+                    "completed_at": None,
+                    "xp_reward": template["xp_reward"],
+                    "progress_percentage": 0
+                }
+                enriched_achievements.append(achievement_dict)
+        
+        # Sort by completion status and progress
+        enriched_achievements.sort(key=lambda x: (x["is_completed"], -x["progress_percentage"]))
+        
+        return APIResponse(
+            success=True,
+            message="Achievements retrieved successfully",
+            data={
+                "achievements": enriched_achievements,
+                "completed_count": len([a for a in enriched_achievements if a["is_completed"]]),
+                "total_count": len(enriched_achievements)
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting achievements: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve achievements")
+
+@api_router.get("/gamification/streaks", response_model=APIResponse)
+async def get_user_streaks(current_user: User = Depends(get_current_user)):
+    """Get user's streak information"""
+    try:
+        streaks = await db.streaks.find({"user_id": current_user.id}).to_list(10)
+        
+        # Enrich streaks with user-friendly data
+        enriched_streaks = []
+        for streak in streaks:
+            streak_dict = Streak(**streak).dict()
+            
+            # Add user-friendly information
+            if streak["streak_type"] == "daily_login":
+                streak_dict["display_name"] = "Daily Login"
+                streak_dict["description"] = "Consecutive days of logging in"
+                streak_dict["icon"] = "📅"
+            elif streak["streak_type"] == "weekly_learning":
+                streak_dict["display_name"] = "Weekly Learning"
+                streak_dict["description"] = "Consecutive weeks of learning activity"
+                streak_dict["icon"] = "📚"
+            
+            # Check if streak is still active (within last 24 hours for daily, 7 days for weekly)
+            now = datetime.utcnow()
+            if streak["streak_type"] == "daily_login":
+                streak_dict["is_active"] = (now - streak["last_activity"]).days <= 1
+            elif streak["streak_type"] == "weekly_learning":
+                streak_dict["is_active"] = (now - streak["last_activity"]).days <= 7
+            
+            enriched_streaks.append(streak_dict)
+        
+        return APIResponse(
+            success=True,
+            message="Streaks retrieved successfully",
+            data={"streaks": enriched_streaks}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting streaks: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve streaks")
+
+@api_router.get("/gamification/xp-history", response_model=APIResponse)
+async def get_xp_history(
+    days: int = 30,
+    current_user: User = Depends(get_current_user)
+):
+    """Get user's XP earning history"""
+    try:
+        # Get XP transactions from last N days
+        start_date = datetime.utcnow() - timedelta(days=days)
+        xp_transactions = await db.xp_transactions.find({
+            "user_id": current_user.id,
+            "created_at": {"$gte": start_date}
+        }).sort("created_at", -1).to_list(1000)
+        
+        # Group by day for chart data
+        daily_xp = {}
+        for transaction in xp_transactions:
+            day = transaction["created_at"].date().isoformat()
+            if day not in daily_xp:
+                daily_xp[day] = 0
+            daily_xp[day] += transaction["xp_amount"]
+        
+        # Create chart data
+        chart_data = []
+        for i in range(days):
+            date = (datetime.utcnow() - timedelta(days=i)).date()
+            date_str = date.isoformat()
+            chart_data.append({
+                "date": date_str,
+                "xp": daily_xp.get(date_str, 0)
+            })
+        
+        chart_data.reverse()  # Oldest first
+        
+        return APIResponse(
+            success=True,
+            message="XP history retrieved successfully",
+            data={
+                "recent_transactions": [XPTransaction(**t).dict() for t in xp_transactions[:50]],
+                "daily_chart": chart_data,
+                "total_xp_period": sum(daily_xp.values()),
+                "average_daily_xp": sum(daily_xp.values()) / max(len(daily_xp), 1)
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting XP history: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve XP history")
+
+@api_router.get("/gamification/progress", response_model=APIResponse)
+async def get_user_progress(current_user: User = Depends(get_current_user)):
+    """Get comprehensive user progress across all features"""
+    try:
+        # Get detailed progress from all features
+        progress_data = {}
+        
+        # Statute reading progress
+        statutes_read = await db.user_statute_progress.count_documents({"user_id": current_user.id})
+        total_statutes = await db.legal_statutes.count_documents({})
+        progress_data["statutes"] = {
+            "read": statutes_read,
+            "total": total_statutes,
+            "percentage": (statutes_read / max(total_statutes, 1)) * 100
+        }
+        
+        # Myth reading progress
+        myths_read = await db.user_myth_progress.count_documents({"user_id": current_user.id})
+        total_myths = await db.legal_myths.count_documents({"status": "published"})
+        progress_data["myths"] = {
+            "read": myths_read,
+            "total": total_myths,
+            "percentage": (myths_read / max(total_myths, 1)) * 100
+        }
+        
+        # Simulation progress
+        simulations_completed = await db.simulation_progress.count_documents({
+            "user_id": current_user.id,
+            "completed": True
+        })
+        total_simulations = await db.simulation_scenarios.count_documents({"is_active": True})
+        progress_data["simulations"] = {
+            "completed": simulations_completed,
+            "total": total_simulations,
+            "percentage": (simulations_completed / max(total_simulations, 1)) * 100
+        }
+        
+        # Learning path progress
+        learning_paths_completed = await db.user_learning_progress.count_documents({
+            "user_id": current_user.id,
+            "is_completed": True
+        })
+        total_learning_paths = await db.learning_paths.count_documents({"is_active": True})
+        progress_data["learning_paths"] = {
+            "completed": learning_paths_completed,
+            "total": total_learning_paths,
+            "percentage": (learning_paths_completed / max(total_learning_paths, 1)) * 100
+        }
+        
+        # Community engagement
+        questions_asked = await db.questions.count_documents({"author_id": current_user.id})
+        answers_provided = await db.answers.count_documents({"author_id": current_user.id})
+        progress_data["community"] = {
+            "questions_asked": questions_asked,
+            "answers_provided": answers_provided,
+            "total_contributions": questions_asked + answers_provided
+        }
+        
+        # AI interactions
+        ai_conversations = await db.chat_sessions.count_documents({"user_id": current_user.id})
+        progress_data["ai_interactions"] = {
+            "conversations": ai_conversations
+        }
+        
+        # Overall progress calculation
+        feature_completions = [
+            progress_data["statutes"]["percentage"],
+            progress_data["myths"]["percentage"],
+            progress_data["simulations"]["percentage"],
+            progress_data["learning_paths"]["percentage"]
+        ]
+        
+        overall_progress = sum(feature_completions) / len(feature_completions)
+        
+        return APIResponse(
+            success=True,
+            message="User progress retrieved successfully",
+            data={
+                "overall_progress": overall_progress,
+                "features": progress_data,
+                "user_level": current_user.level,
+                "user_xp": current_user.xp,
+                "badges_earned": len(current_user.badges)
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting user progress: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve user progress")
+
 # Include the router in the main app
 app.include_router(api_router)
 
