@@ -43,6 +43,14 @@ const TableOfContents = ({ onNavigate }) => {
         { title: 'Trophy Wall', href: '/trophy-wall', icon: '🏆' },
         { title: 'Daily Learning', href: '/dashboard', icon: '📖' },
       ]
+    },
+    {
+      title: 'About RightNow',
+      icon: '🌟',
+      description: 'Learn about our mission and values',
+      pages: [
+        { title: 'About Us', href: '/about', icon: '🌟' },
+      ]
     }
   ];
 
