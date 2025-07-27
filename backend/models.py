@@ -610,14 +610,14 @@ class XPTransaction(BaseModel):
 
 # Mascot System Models
 class MascotMood(str, Enum):
-    HAPPY = "happy"
-    EXCITED = "excited"
-    ENCOURAGING = "encouraging"
-    PROUD = "proud"
-    THOUGHTFUL = "thoughtful"
-    CONCERNED = "concerned"
-    CELEBRATORY = "celebratory"
-    MOTIVATIONAL = "motivational"
+    PROTECTIVE = "protective"
+    CLEAR = "clear"
+    EMPOWERING = "empowering"
+    SERIOUS = "serious"
+    FOCUSED = "focused"
+    ALERT = "alert"
+    SUPPORTIVE = "supportive"
+    VIGILANT = "vigilant"
 
 class MascotAction(str, Enum):
     WELCOME = "welcome"
