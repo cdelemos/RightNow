@@ -2,7 +2,7 @@
 import requests
 import json
 
-BACKEND_URL = "https://a456f05e-7b3d-4acf-881f-ef989435baa8.preview.emergentagent.com/api"
+BACKEND_URL = "https://d1d25d3b-bdd3-4635-9d4d-701b2969f1d7.preview.emergentagent.com/api"
 
 # First login to get token
 login_data = {
