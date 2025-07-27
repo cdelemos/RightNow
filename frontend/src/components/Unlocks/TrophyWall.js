@@ -127,14 +127,6 @@ const TrophyWall = () => {
       setLoading(true);
       setError(null);
       
-      // Use mock data for now
-      setTimeout(() => {
-        setTrophyData(mockTrophyData);
-        setLoading(false);
-      }, 1000);
-      
-      // Actual API call (commented out for demo)
-      /*
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/unlocks/trophy-wall`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -142,8 +134,10 @@ const TrophyWall = () => {
       
       if (response.data.success) {
         setTrophyData(response.data.data);
+      } else {
+        setError('Failed to load trophy wall data');
       }
-      */
+      setLoading(false);
     } catch (error) {
       console.error('Failed to load trophy wall:', error);
       setError('Failed to load trophy wall data');
