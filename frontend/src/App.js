@@ -151,6 +151,13 @@ function App() {
                   </BookContainer>
                 </ProtectedRoute>
               } />
+              <Route path="/trophy-wall" element={
+                <ProtectedRoute>
+                  <BookContainer>
+                    <TrophyWall />
+                  </BookContainer>
+                </ProtectedRoute>
+              } />
               
               {/* Default redirect */}
               <Route path="/" element={<Navigate to="/dashboard" />} />
