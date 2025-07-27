@@ -2642,12 +2642,23 @@ async def generate_ai_response(message: str, context: Dict[str, Any], user_state
             initial_messages=messages[:-1]  # All messages except the last user message
         )
         
-        # Send the user message
+        # Send the user message and await the response
         user_msg = UserMessage(text=message)
         ai_response = await chat.send_message(user_msg)
         
+        # Extract the response text - handle different response formats
+        if hasattr(ai_response, 'text'):
+            response_text = ai_response.text
+        elif hasattr(ai_response, 'content'):
+            response_text = ai_response.content
+        elif isinstance(ai_response, str):
+            response_text = ai_response
+        else:
+            # If response is a dict or other format, convert to string
+            response_text = str(ai_response)
+        
         return {
-            "response": ai_response,
+            "response": response_text,
             "confidence_score": 0.8,
             "suggested_statutes": []  # Could implement statute suggestion logic
         }
