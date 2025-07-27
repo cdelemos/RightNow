@@ -3523,7 +3523,8 @@ async def get_gamification_dashboard(current_user: User = Depends(get_current_us
         user_achievements = []
         try:
             user_achievements_cursor = db.user_achievements.find({"user_id": current_user.id})
-            user_achievements = await user_achievements_cursor.to_list(100)
+            user_achievements_raw = await user_achievements_cursor.to_list(100)
+            user_achievements = [clean_mongo_document(achievement) for achievement in user_achievements_raw]
         except Exception as e:
             logging.warning(f"Error fetching user achievements: {str(e)}")
             # Fallback achievements
