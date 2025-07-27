@@ -3713,7 +3713,7 @@ async def get_emergency_quick_tools(current_user: User = Depends(get_current_use
     return APIResponse(
         success=True,
         message="Emergency quick tools retrieved successfully",
-        data=tools
+        data=[tool.dict() for tool in tools]
     )
 
 @api_router.get("/emergency/response/{alert_type}", response_model=APIResponse)
