@@ -11,9 +11,110 @@ const TrophyWall = () => {
   const [error, setError] = useState(null);
   const [checkingUnlock, setCheckingUnlock] = useState(null);
   const [unlockModal, setUnlockModal] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
   const API = `${BACKEND_URL}/api`;
+
+  // Mock data for demonstration
+  const mockTrophyData = {
+    total_unlocks: 12,
+    available_unlocks: 8,
+    user_level: user?.level || 1,
+    user_xp: user?.xp || 0,
+    unlocks: [
+      {
+        id: 1,
+        title: "Constitutional Scholar",
+        description: "Master all constitutional rights and amendments",
+        category: "constitutional",
+        icon: "📜",
+        color: "from-blue-500 to-blue-700",
+        xp_required: 500,
+        current_xp: user?.xp || 0,
+        unlocked: (user?.xp || 0) >= 500,
+        unlock_date: (user?.xp || 0) >= 500 ? new Date() : null,
+        protection_type: "constitutional_rights",
+        requirements: ["Complete 5 constitutional lessons", "Score 80% on constitutional quiz"],
+        rewards: ["Access to advanced constitutional content", "Constitutional badge", "50 XP bonus"]
+      },
+      {
+        id: 2,
+        title: "Tenant Rights Champion",
+        description: "Become an expert in housing and tenant rights",
+        category: "housing",
+        icon: "🏠",
+        color: "from-green-500 to-green-700",
+        xp_required: 300,
+        current_xp: user?.xp || 0,
+        unlocked: (user?.xp || 0) >= 300,
+        unlock_date: (user?.xp || 0) >= 300 ? new Date() : null,
+        protection_type: "housing_rights",
+        requirements: ["Complete tenant rights course", "Practice 3 housing scenarios"],
+        rewards: ["Tenant rights toolkit", "Housing law reference", "30 XP bonus"]
+      },
+      {
+        id: 3,
+        title: "Immigration Advocate",
+        description: "Understand immigration law and defend rights",
+        category: "immigration",
+        icon: "🌎",
+        color: "from-purple-500 to-purple-700",
+        xp_required: 400,
+        current_xp: user?.xp || 0,
+        unlocked: (user?.xp || 0) >= 400,
+        unlock_date: (user?.xp || 0) >= 400 ? new Date() : null,
+        protection_type: "immigration_rights",
+        requirements: ["Complete immigration course", "Pass immigration quiz"],
+        rewards: ["Immigration law handbook", "Know Your Rights cards", "40 XP bonus"]
+      },
+      {
+        id: 4,
+        title: "Criminal Justice Guardian",
+        description: "Protect yourself and others in the criminal justice system",
+        category: "criminal",
+        icon: "⚖️",
+        color: "from-red-500 to-red-700",
+        xp_required: 600,
+        current_xp: user?.xp || 0,
+        unlocked: (user?.xp || 0) >= 600,
+        unlock_date: (user?.xp || 0) >= 600 ? new Date() : null,
+        protection_type: "criminal_justice",
+        requirements: ["Complete criminal justice course", "Master police encounter scenarios"],
+        rewards: ["Criminal defense guide", "Police encounter scripts", "60 XP bonus"]
+      },
+      {
+        id: 5,
+        title: "Workers' Rights Defender",
+        description: "Champion workplace rights and labor protections",
+        category: "employment",
+        icon: "👔",
+        color: "from-yellow-500 to-orange-600",
+        xp_required: 350,
+        current_xp: user?.xp || 0,
+        unlocked: (user?.xp || 0) >= 350,
+        unlock_date: (user?.xp || 0) >= 350 ? new Date() : null,
+        protection_type: "employment_rights",
+        requirements: ["Complete employment law course", "Practice workplace scenarios"],
+        rewards: ["Workers' rights handbook", "Employment law reference", "35 XP bonus"]
+      },
+      {
+        id: 6,
+        title: "Digital Privacy Protector",
+        description: "Master digital rights and privacy protections",
+        category: "privacy",
+        icon: "🔒",
+        color: "from-indigo-500 to-indigo-700",
+        xp_required: 450,
+        current_xp: user?.xp || 0,
+        unlocked: (user?.xp || 0) >= 450,
+        unlock_date: (user?.xp || 0) >= 450 ? new Date() : null,
+        protection_type: "digital_privacy",
+        requirements: ["Complete privacy course", "Master digital rights scenarios"],
+        rewards: ["Privacy protection guide", "Digital security toolkit", "45 XP bonus"]
+      }
+    ]
+  };
 
   useEffect(() => {
     if (user) {
@@ -26,6 +127,14 @@ const TrophyWall = () => {
       setLoading(true);
       setError(null);
       
+      // Use mock data for now
+      setTimeout(() => {
+        setTrophyData(mockTrophyData);
+        setLoading(false);
+      }, 1000);
+      
+      // Actual API call (commented out for demo)
+      /*
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/unlocks/trophy-wall`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -34,10 +143,10 @@ const TrophyWall = () => {
       if (response.data.success) {
         setTrophyData(response.data.data);
       }
+      */
     } catch (error) {
       console.error('Failed to load trophy wall:', error);
       setError('Failed to load trophy wall data');
-    } finally {
       setLoading(false);
     }
   };
