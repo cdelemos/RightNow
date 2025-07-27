@@ -4199,11 +4199,15 @@ async def get_trophy_wall(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/unlocks/check-unlock", response_model=APIResponse)
 async def check_protection_unlock(
-    protection_id: str,
+    request_data: dict,
     current_user: User = Depends(get_current_user)
 ):
     """Check if user can unlock a protection"""
     try:
+        protection_id = request_data.get("protection_id")
+        if not protection_id:
+            raise HTTPException(status_code=400, detail="Protection ID is required")
+        
         # Get protection details
         protection = await db.regional_protections.find_one({"id": protection_id})
         if not protection:
