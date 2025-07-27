@@ -3206,6 +3206,322 @@ async def recommend_simulations(user_prefs: Dict[str, Any], user_id: str, limit:
     
     return recommendations
 
+async def initialize_learning_paths():
+    """Initialize the database with comprehensive learning paths"""
+    # Check if learning paths already exist
+    existing_count = await db.learning_paths.count_documents({})
+    if existing_count > 0:
+        return  # Learning paths already initialized
+    
+    learning_paths_data = [
+        {
+            "title": "Tenant Rights Mastery",
+            "description": "Master your rights as a renter. Learn about lease agreements, security deposits, eviction procedures, and how to deal with problem landlords.",
+            "path_type": LearningPathType.TENANT_PROTECTION,
+            "target_audience": ["undergraduate", "graduate", "general"],
+            "estimated_duration": 45,  # minutes
+            "difficulty_level": 2,
+            "learning_objectives": [
+                "Understand lease agreement essentials",
+                "Know your rights regarding security deposits",
+                "Recognize illegal eviction practices",
+                "Learn how to document housing issues"
+            ],
+            "tags": ["renter", "housing", "landlord", "lease", "eviction"],
+            "total_xp_reward": 150,
+            "start_node_id": "tenant_intro",
+            "path_nodes": [
+                {
+                    "id": "tenant_intro",
+                    "title": "Welcome to Tenant Rights",
+                    "description": "Learn the basics of tenant-landlord relationships and your fundamental rights as a renter.",
+                    "node_type": "myth",
+                    "content_id": None,  # Reference to housing myth
+                    "xp_required": 0,
+                    "xp_reward": 20,
+                    "prerequisites": [],
+                    "estimated_minutes": 5,
+                    "difficulty_level": 1,
+                    "is_locked": False,
+                    "completion_criteria": {"required_interaction": "read_and_understand"}
+                },
+                {
+                    "id": "tenant_simulation",
+                    "title": "Housing Dispute Practice",
+                    "description": "Practice handling a landlord dispute in a safe simulation environment.",
+                    "node_type": "simulation",
+                    "content_id": None,  # Reference to housing simulation
+                    "xp_required": 50,
+                    "xp_reward": 40,
+                    "prerequisites": ["tenant_intro"],
+                    "estimated_minutes": 15,
+                    "difficulty_level": 2,
+                    "is_locked": True,
+                    "completion_criteria": {"simulation_score": 70}
+                },
+                {
+                    "id": "tenant_qa",
+                    "title": "Housing Q&A Discussion",
+                    "description": "Engage with the community on housing-related questions and learn from others' experiences.",
+                    "node_type": "qa_topic",
+                    "content_id": "housing",
+                    "xp_required": 100,
+                    "xp_reward": 30,
+                    "prerequisites": ["tenant_simulation"],
+                    "estimated_minutes": 10,
+                    "difficulty_level": 2,
+                    "is_locked": True,
+                    "completion_criteria": {"ask_or_answer": True}
+                },
+                {
+                    "id": "tenant_ai_session",
+                    "title": "AI Housing Consultation",
+                    "description": "Have a focused conversation with the AI assistant about specific housing scenarios.",
+                    "node_type": "ai_session",
+                    "content_id": None,
+                    "xp_required": 150,
+                    "xp_reward": 35,
+                    "prerequisites": ["tenant_qa"],
+                    "estimated_minutes": 15,
+                    "difficulty_level": 3,
+                    "is_locked": True,
+                    "completion_criteria": {"ai_interactions": 3}
+                }
+            ]
+        },
+        {
+            "title": "Immigration Rights Protection",
+            "description": "Essential knowledge for protecting your rights regardless of immigration status. Learn about ICE encounters, workplace protections, and community resources.",
+            "path_type": LearningPathType.IMMIGRATION_RIGHTS,
+            "target_audience": ["undergraduate", "graduate", "general"],
+            "estimated_duration": 50,
+            "difficulty_level": 3,
+            "learning_objectives": [
+                "Understand constitutional rights for all persons",
+                "Learn proper responses to ICE encounters",
+                "Know workplace immigration protections",
+                "Identify community legal resources"
+            ],
+            "tags": ["immigrant", "ice", "workplace", "constitutional"],
+            "total_xp_reward": 180,
+            "start_node_id": "immigration_basics",
+            "path_nodes": [
+                {
+                    "id": "immigration_basics",
+                    "title": "Constitutional Rights for Everyone",
+                    "description": "Learn about the constitutional rights that apply to all people in the United States, regardless of immigration status.",
+                    "node_type": "myth",
+                    "content_id": None,
+                    "xp_required": 0,
+                    "xp_reward": 25,
+                    "prerequisites": [],
+                    "estimated_minutes": 7,
+                    "difficulty_level": 2,
+                    "is_locked": False,
+                    "completion_criteria": {"required_interaction": "read_and_understand"}
+                },
+                {
+                    "id": "ice_simulation",
+                    "title": "ICE Encounter Response",
+                    "description": "Practice handling an ICE encounter scenario with proper rights assertion.",
+                    "node_type": "simulation",
+                    "content_id": None,
+                    "xp_required": 100,
+                    "xp_reward": 50,
+                    "prerequisites": ["immigration_basics"],
+                    "estimated_minutes": 20,
+                    "difficulty_level": 3,
+                    "is_locked": True,
+                    "completion_criteria": {"simulation_score": 75}
+                },
+                {
+                    "id": "immigration_community",
+                    "title": "Immigration Law Discussion",
+                    "description": "Participate in community discussions about immigration law and share knowledge.",
+                    "node_type": "qa_topic",
+                    "content_id": "civil_rights",
+                    "xp_required": 200,
+                    "xp_reward": 40,
+                    "prerequisites": ["ice_simulation"],
+                    "estimated_minutes": 15,
+                    "difficulty_level": 3,
+                    "is_locked": True,
+                    "completion_criteria": {"ask_or_answer": True}
+                },
+                {
+                    "id": "immigration_resources",
+                    "title": "Legal Resource Navigation",
+                    "description": "Learn how to find and access legal resources in your community.",
+                    "node_type": "ai_session",
+                    "content_id": None,
+                    "xp_required": 300,
+                    "xp_reward": 45,
+                    "prerequisites": ["immigration_community"],
+                    "estimated_minutes": 12,
+                    "difficulty_level": 3,
+                    "is_locked": True,
+                    "completion_criteria": {"ai_interactions": 2}
+                }
+            ]
+        },
+        {
+            "title": "Student Rights & Campus Law",
+            "description": "Navigate your rights as a student, from campus searches to free speech protections. Essential for college students.",
+            "path_type": LearningPathType.STUDENT_RIGHTS,
+            "target_audience": ["undergraduate", "graduate"],
+            "estimated_duration": 35,
+            "difficulty_level": 2,
+            "learning_objectives": [
+                "Understand student 4th Amendment protections",
+                "Learn about campus free speech rights",
+                "Know academic due process procedures",
+                "Recognize discrimination and harassment"
+            ],
+            "tags": ["student", "campus", "education", "free speech"],
+            "total_xp_reward": 120,
+            "start_node_id": "student_basics",
+            "path_nodes": [
+                {
+                    "id": "student_basics",
+                    "title": "Students Don't Lose All Rights",
+                    "description": "Understand that students retain constitutional protections even on campus, though with some limitations.",
+                    "node_type": "myth",
+                    "content_id": None,
+                    "xp_required": 0,
+                    "xp_reward": 20,
+                    "prerequisites": [],
+                    "estimated_minutes": 5,
+                    "difficulty_level": 1,
+                    "is_locked": False,
+                    "completion_criteria": {"required_interaction": "read_and_understand"}
+                },
+                {
+                    "id": "campus_scenarios",
+                    "title": "Campus Rights Practice",
+                    "description": "Practice asserting your rights in various campus scenarios.",
+                    "node_type": "qa_topic",
+                    "content_id": "education",
+                    "xp_required": 50,
+                    "xp_reward": 30,
+                    "prerequisites": ["student_basics"],
+                    "estimated_minutes": 12,
+                    "difficulty_level": 2,
+                    "is_locked": True,
+                    "completion_criteria": {"ask_or_answer": True}
+                },
+                {
+                    "id": "student_ai_consultation",
+                    "title": "Campus Legal Consultation",
+                    "description": "Discuss specific campus legal scenarios with the AI assistant.",
+                    "node_type": "ai_session",
+                    "content_id": None,
+                    "xp_required": 100,
+                    "xp_reward": 40,
+                    "prerequisites": ["campus_scenarios"],
+                    "estimated_minutes": 18,
+                    "difficulty_level": 2,
+                    "is_locked": True,
+                    "completion_criteria": {"ai_interactions": 3}
+                }
+            ]
+        },
+        {
+            "title": "Criminal Defense Fundamentals",
+            "description": "Essential knowledge for protecting yourself during police encounters, traffic stops, and criminal investigations.",
+            "path_type": LearningPathType.CRIMINAL_DEFENSE,
+            "target_audience": ["undergraduate", "graduate", "general"],
+            "estimated_duration": 40,
+            "difficulty_level": 2,
+            "learning_objectives": [
+                "Master Miranda rights and when they apply",
+                "Learn proper traffic stop procedures",
+                "Understand search and seizure protections",
+                "Know when to request an attorney"
+            ],
+            "tags": ["police", "traffic", "miranda", "attorney"],
+            "total_xp_reward": 140,
+            "start_node_id": "miranda_myth",
+            "path_nodes": [
+                {
+                    "id": "miranda_myth",
+                    "title": "Miranda Rights Reality Check",
+                    "description": "Learn the truth about when police must read Miranda rights - it's not always during arrests.",
+                    "node_type": "myth",
+                    "content_id": None,
+                    "xp_required": 0,
+                    "xp_reward": 25,
+                    "prerequisites": [],
+                    "estimated_minutes": 6,
+                    "difficulty_level": 2,
+                    "is_locked": False,
+                    "completion_criteria": {"required_interaction": "read_and_understand"}
+                },
+                {
+                    "id": "traffic_stop_practice",
+                    "title": "Traffic Stop Mastery",
+                    "description": "Practice handling a traffic stop scenario with confidence and knowledge of your rights.",
+                    "node_type": "simulation",
+                    "content_id": None,
+                    "xp_required": 75,
+                    "xp_reward": 45,
+                    "prerequisites": ["miranda_myth"],
+                    "estimated_minutes": 18,
+                    "difficulty_level": 2,
+                    "is_locked": True,
+                    "completion_criteria": {"simulation_score": 80}
+                },
+                {
+                    "id": "criminal_law_discussion",
+                    "title": "Criminal Law Community",
+                    "description": "Engage with others about criminal law questions and scenarios.",
+                    "node_type": "qa_topic",
+                    "content_id": "criminal_law",
+                    "xp_required": 150,
+                    "xp_reward": 35,
+                    "prerequisites": ["traffic_stop_practice"],
+                    "estimated_minutes": 10,
+                    "difficulty_level": 2,
+                    "is_locked": True,
+                    "completion_criteria": {"ask_or_answer": True}
+                },
+                {
+                    "id": "defense_strategies",
+                    "title": "Defense Strategy Session",
+                    "description": "Learn about legal defense strategies and when to seek professional help.",
+                    "node_type": "ai_session",
+                    "content_id": None,
+                    "xp_required": 200,
+                    "xp_reward": 35,
+                    "prerequisites": ["criminal_law_discussion"],
+                    "estimated_minutes": 6,
+                    "difficulty_level": 3,
+                    "is_locked": True,
+                    "completion_criteria": {"ai_interactions": 2}
+                }
+            ]
+        }
+    ]
+    
+    # Create learning paths
+    created_paths = []
+    for path_data in learning_paths_data:
+        # Convert path nodes
+        path_nodes = []
+        for node_data in path_data["path_nodes"]:
+            node = LearningPathNode(**node_data)
+            path_nodes.append(node)
+        
+        # Create learning path
+        learning_path = LearningPath(
+            **{k: v for k, v in path_data.items() if k != "path_nodes"},
+            path_nodes=path_nodes,
+            created_by="system"
+        )
+        created_paths.append(learning_path)
+    
+    await db.learning_paths.insert_many([path.dict() for path in created_paths])
+    logging.info(f"Initialized {len(created_paths)} comprehensive learning paths")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
