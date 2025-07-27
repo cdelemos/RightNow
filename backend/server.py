@@ -1288,12 +1288,30 @@ async def get_myth_feed(
     page: int = 1,
     per_page: int = 10,
     category: Optional[StatuteCategory] = None,
+    protection_type: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    """Get myth feed for swipeable interface"""
+    """Get myth feed for swipeable interface with optional protection type filtering"""
     query = {"status": LegalMythStatus.PUBLISHED.value}
     if category:
         query["category"] = category.value
+    
+    # Filter by protection type if provided
+    if protection_type:
+        # Map protection types to relevant legal categories
+        protection_category_mapping = {
+            "RENTER": ["housing", "civil_rights", "contracts"],
+            "WORKER": ["employment", "contracts", "civil_rights"],
+            "STUDENT": ["education", "civil_rights", "criminal_law"],
+            "UNDOCUMENTED": ["civil_rights", "criminal_law"],
+            "PROTESTER": ["civil_rights", "criminal_law"],
+            "DISABLED": ["civil_rights", "education"],
+            "GENERAL": None  # No filtering for general
+        }
+        
+        relevant_categories = protection_category_mapping.get(protection_type.upper())
+        if relevant_categories:
+            query["category"] = {"$in": relevant_categories}
     
     total = await db.legal_myths.count_documents(query)
     skip = (page - 1) * per_page
