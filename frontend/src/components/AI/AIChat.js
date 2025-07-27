@@ -541,7 +541,6 @@ const AIChat = () => {
         {showMemory && (
           <div className="w-80">
             <MemoryContext 
-              ref={memoryContextRef}
               sessionId={sessionId}
               onMemoryUpdate={() => {
                 // Refresh suggestions when memory is updated
