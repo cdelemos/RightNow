@@ -344,16 +344,15 @@ const GamificationDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sage-50 to-green-50 p-4">
+    <div className="h-full overflow-y-auto p-6 bg-gradient-to-br from-forest-50 to-green-50">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <span className="text-4xl">🎮</span>
-            <h1 className="text-4xl font-bold text-gray-800">Gamification Hub</h1>
-          </div>
-          <p className="text-gray-600">
-            Track your progress, earn rewards, and compete with other learners!
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-book-leather mb-2">
+            🏆 Your Justice Journey
+          </h1>
+          <p className="text-forest-600">
+            Track your progress, achievements, and legal knowledge mastery
           </p>
         </div>
 
