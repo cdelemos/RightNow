@@ -15,6 +15,23 @@ const AboutUs = () => {
           <p className="text-xl text-forest-600 max-w-2xl mx-auto">
             Empowering communities through accessible legal education and real-world protection
           </p>
+          
+          {/* Navigation links */}
+          <div className="flex justify-center gap-4 mt-6">
+            <Link 
+              to="/login" 
+              className="text-forest-600 hover:text-forest-700 underline text-sm"
+            >
+              ← Back to Login
+            </Link>
+            <span className="text-forest-300">|</span>
+            <Link 
+              to="/register" 
+              className="text-forest-600 hover:text-forest-700 underline text-sm"
+            >
+              Register →
+            </Link>
+          </div>
         </div>
 
         {/* Mission Statement */}
