@@ -93,6 +93,23 @@ const Navbar = () => {
               </div>
             </div>
 
+            {/* Notification Bell */}
+            <button
+              onClick={() => setIsNotificationPanelOpen(true)}
+              className="relative bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl transition-all duration-200 hover:scale-105 backdrop-blur-sm shadow-sage"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 17h5l-5 5v-5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 1v6l4-4M8 5l4 4" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={handleLogout}
               className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 backdrop-blur-sm shadow-sage"
