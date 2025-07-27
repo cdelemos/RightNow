@@ -388,6 +388,16 @@ const AIChat = () => {
           </div>
         </div>
       )}
+
+      {/* UPL Risk Warning */}
+      {uplRiskWarning && (
+        <UPLRiskWarning
+          query={uplRiskWarning.query}
+          severity={uplRiskWarning.severity}
+          onDismiss={handleUPLWarningDismiss}
+          onSeekAdvice={handleSeekLegalAdvice}
+        />
+      )}
     </div>
   );
 };
