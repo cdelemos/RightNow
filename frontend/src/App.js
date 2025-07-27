@@ -156,6 +156,13 @@ function App() {
                         </BookContainer>
                       </ProtectedRoute>
                     } />
+                    <Route path="/personalized-learning" element={
+                      <ProtectedRoute>
+                        <BookContainer>
+                          <PersonalizedLearning />
+                        </BookContainer>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/ai-chat" element={
                       <ProtectedRoute>
                         <BookContainer>
