@@ -127,6 +127,15 @@ const Login = () => {
                 Don't have an account? <span className="text-forest-700 font-semibold">Join the community!</span> 🎓
               </Link>
             </div>
+            
+            <div className="text-center">
+              <Link
+                to="/about"
+                className="text-sm text-forest-500 hover:text-forest-600 transition-colors duration-200"
+              >
+                Learn more about RightNow 🌟
+              </Link>
+            </div>
           </form>
         </div>
 
