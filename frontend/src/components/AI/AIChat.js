@@ -183,6 +183,22 @@ const AIChat = () => {
       .replace(/\n/g, '<br />');
   };
 
+  const handleUPLWarningDismiss = () => {
+    setUplRiskWarning(null);
+  };
+
+  const handleSeekLegalAdvice = () => {
+    // Add system message about seeking legal advice
+    const adviceMessage = {
+      id: Date.now(),
+      type: 'system',
+      content: '📞 For legal advice, consider contacting:\n\n• Local bar association referral services\n• Legal aid organizations\n• Private attorneys in your area\n\nRemember: This platform provides educational information only.',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, adviceMessage]);
+    setUplRiskWarning(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sage-50 to-emerald-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
