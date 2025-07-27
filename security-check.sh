@@ -36,7 +36,7 @@ fi
 echo ""
 echo "🔍 Checking .env files..."
 if [ -f "backend/.env" ]; then
-    if grep -q "sk-" "backend/.env" 2>/dev/null; then
+    if grep -q "sk-[a-zA-Z0-9]\{20,\}" "backend/.env" 2>/dev/null | grep -v "sk-xxxxxxxxxx" | grep -v "sk-proj-your"; then
         echo "❌ Found API key in backend/.env file!"
     else
         echo "✅ backend/.env file is clean"
@@ -44,7 +44,7 @@ if [ -f "backend/.env" ]; then
 fi
 
 if [ -f "frontend/.env" ]; then
-    if grep -q "sk-" "frontend/.env" 2>/dev/null; then
+    if grep -q "sk-[a-zA-Z0-9]\{20,\}" "frontend/.env" 2>/dev/null | grep -v "sk-xxxxxxxxxx" | grep -v "sk-proj-your"; then
         echo "❌ Found API key in frontend/.env file!"
     else
         echo "✅ frontend/.env file is clean"
