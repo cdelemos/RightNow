@@ -2810,7 +2810,7 @@ async def get_personalized_suggestions(
             return APIResponse(
                 success=True,
                 message="Personalized suggestions retrieved successfully",
-                data={"suggestions": existing_suggestions}
+                data={"suggestions": [PersonalizedSuggestion(**s).dict() for s in existing_suggestions]}
             )
         
         # Generate new suggestions based on learning patterns
