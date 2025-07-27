@@ -163,7 +163,7 @@ function App() {
             </ProtectedRoute>
             
             <ProtectedRoute>
-              <MascotWidget position="bottom-right" />
+              <MascotWidget position="bottom-left" />
             </ProtectedRoute>
           </BrowserRouter>
         </div>
