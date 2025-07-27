@@ -20,10 +20,10 @@ This project uses environment variables to store sensitive information like API 
 - `DB_NAME`: Database name (default: "rightnow_legal_platform")
 
 #### Authentication
-- `JWT_SECRET`: Secret key for JWT token generation (generate a strong random string)
+- `JWT_SECRET`: Secret key for JWT token generation (REQUIRED - generate a strong random string of at least 32 characters)
 
 #### OpenAI Integration
-- `OPENAI_API_KEY`: Your OpenAI API key
+- `OPENAI_API_KEY`: Your OpenAI API key (REQUIRED for AI features)
   - Get your API key from: https://platform.openai.com/api-keys
   - Format: `sk-proj-...` (starts with sk-proj-)
 
@@ -31,9 +31,31 @@ This project uses environment variables to store sensitive information like API 
 ```bash
 MONGO_URL="mongodb://localhost:27017"
 DB_NAME="rightnow_legal_platform"
-JWT_SECRET="your-super-secure-jwt-secret-key-here"
+JWT_SECRET="your-super-secure-jwt-secret-key-here-min-32-chars"
 OPENAI_API_KEY="sk-proj-your-openai-api-key-here"
 ```
+
+## Security Requirements
+
+### JWT Secret Generation
+The JWT_SECRET must be a strong, randomly generated string of at least 32 characters. You can generate one using:
+
+```bash
+# Option 1: Using Python
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Option 2: Using OpenSSL
+openssl rand -base64 32
+
+# Option 3: Using Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**⚠️ CRITICAL SECURITY NOTES:**
+1. **Never use the default JWT secret in production**
+2. **Generate a unique JWT secret for each environment** (dev, staging, production)
+3. **Keep JWT secrets different from other API keys**
+4. **JWT secrets should be at least 32 characters long**
 
 ## Frontend Environment Variables
 
