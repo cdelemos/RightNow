@@ -556,7 +556,7 @@ const LearningPaths = () => {
           </>
         )}
 
-        {view === 'progress' && <ProgressView userProgress={userProgress} pathTypeLabels={pathTypeLabels} />}
+        {view === 'progress' && <ProgressView userProgress={userProgress} pathTypeLabels={pathTypeLabels} getPathTypeColorClasses={getPathTypeColorClasses} />}
       </div>
     </div>
   );
