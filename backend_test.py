@@ -2411,6 +2411,11 @@ class BackendTester:
         self.test_protected_route_without_auth()
         self.test_protected_route_with_auth()
         
+        # PURPOSE-DRIVEN XP UNLOCKS BACKEND TESTING (HIGH PRIORITY)
+        print("\n🏆 PURPOSE-DRIVEN XP UNLOCKS BACKEND TESTS")
+        print("-" * 50)
+        self.test_purpose_driven_xp_unlocks_backend()
+        
         # AI-Powered Legal Query Assistant tests (NEW FEATURE)
         print("\n🤖 AI-POWERED LEGAL QUERY ASSISTANT TESTS")
         print("-" * 50)
