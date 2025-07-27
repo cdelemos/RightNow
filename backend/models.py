@@ -406,33 +406,96 @@ class UserMythProgress(BaseModel):
     comprehension_score: Optional[int] = None  # 1-5 rating
 
 # Emergency SOS Models
+class EmergencyContactType(str, Enum):
+    FAMILY = "family"
+    FRIEND = "friend"
+    LAWYER = "lawyer"
+    LEGAL_AID = "legal_aid"
+    ORGANIZATION = "organization"
+
 class EmergencyContact(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     name: str
-    phone: str
+    phone_number: str
     email: Optional[str] = None
-    relationship: str
-    is_primary: bool = False
+    contact_type: EmergencyContactType
+    relationship: Optional[str] = None
+    organization: Optional[str] = None  # Legal aid organization, etc.
+    notes: Optional[str] = None
+    is_priority: bool = False  # Priority contacts get notified first
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-class EmergencyContactCreate(BaseModel):
-    name: str
-    phone: str
-    email: Optional[str] = None
-    relationship: str
-    is_primary: bool = False
+class EmergencyAlertType(str, Enum):
+    POLICE_ENCOUNTER = "police_encounter"
+    ICE_ENCOUNTER = "ice_encounter"
+    ARREST = "arrest"
+    DETENTION = "detention"
+    TRAFFIC_STOP = "traffic_stop"
+    SEARCH = "search"
+    HOUSING_EMERGENCY = "housing_emergency"
+    WORKPLACE_EMERGENCY = "workplace_emergency"
+    GENERAL_EMERGENCY = "general_emergency"
 
 class EmergencyAlert(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
-    alert_type: str
-    location: Optional[Dict[str, Any]] = {}  # GPS coordinates, address
-    message: Optional[str] = None
-    contacts_notified: List[str] = []  # Contact IDs
-    status: str = "active"  # active, resolved, cancelled
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    alert_type: EmergencyAlertType
+    location: Optional[Dict[str, Any]] = None  # lat, lng, address
+    description: Optional[str] = None
+    priority_level: int = 1  # 1=low, 2=medium, 3=high, 4=critical
+    is_active: bool = True
     resolved_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Notification tracking
+    contacts_notified: List[str] = []  # Contact IDs that have been notified
+    notification_sent_at: Optional[datetime] = None
+    
+    # Additional context
+    legal_context: Optional[str] = None  # Relevant legal info
+    recommended_actions: List[str] = []
+    relevant_statutes: List[str] = []  # Statute IDs
+
+class EmergencyResponse(BaseModel):
+    alert_id: str
+    response_type: str  # "know_rights", "contact_lawyer", "document_incident"
+    content: str
+    legal_guidance: Optional[str] = None
+    emergency_scripts: List[str] = []
+    relevant_statutes: List[str] = []
+    next_steps: List[str] = []
+
+class LocationData(BaseModel):
+    latitude: float
+    longitude: float
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class EmergencyContactCreate(BaseModel):
+    name: str
+    phone_number: str
+    email: Optional[str] = None
+    contact_type: EmergencyContactType
+    relationship: Optional[str] = None
+    organization: Optional[str] = None
+    notes: Optional[str] = None
+    is_priority: bool = False
+
+class EmergencyAlertCreate(BaseModel):
+    alert_type: EmergencyAlertType
+    location: Optional[Dict[str, Any]] = None
+    description: Optional[str] = None
+    priority_level: int = 2
+
+class QuickAccessTool(BaseModel):
+    tool_type: str  # "statute_search", "rights_script", "contact_alert", "ai_chat"
+    title: str
+    description: str
+    icon: str
+    action_data: Dict[str, Any] = {}
 
 # Gamification Models
 class Badge(BaseModel):
