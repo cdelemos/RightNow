@@ -16,6 +16,7 @@ import math
 import json
 import re
 import uuid
+from bson import ObjectId
 from emergentintegrations.llm.openai import LlmChat
 
 # Import our models
