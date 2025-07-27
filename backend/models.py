@@ -390,10 +390,10 @@ class ChatResponseData(BaseModel):
     confidence_score: Optional[float] = None
     upl_risk_flagged: bool = False
     upl_warning: Optional[str] = None
-    suggested_scripts: List[Dict[str, Any]] = []
-    suggested_statutes: List[str] = []
     xp_awarded: int = 0
-    requires_state: bool = False
+    suggested_statutes: List[Dict[str, Any]] = []
+    suggested_scripts: List[Dict[str, Any]] = []
+    suggested_actions: List[Dict[str, Any]] = []
 
 # User interaction with myths
 class UserMythProgress(BaseModel):
