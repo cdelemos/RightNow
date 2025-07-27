@@ -40,6 +40,7 @@ const TableOfContents = ({ onNavigate }) => {
       description: 'Track progress and achievements',
       pages: [
         { title: 'Gamification Hub', href: '/gamification', icon: '🎮' },
+        { title: 'Trophy Wall', href: '/trophy-wall', icon: '🏆' },
         { title: 'Daily Learning', href: '/dashboard', icon: '📖' },
       ]
     }
