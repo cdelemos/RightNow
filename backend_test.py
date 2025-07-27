@@ -2303,6 +2303,20 @@ class BackendTester:
         self.test_mascot_celebration_system_integration()
         self.test_user_with_no_xp_or_lessons()
         
+        # AI Memory & Suggestion Engine tests (NEW FEATURE)
+        print("\n🧠 AI MEMORY & SUGGESTION ENGINE TESTS")
+        print("-" * 50)
+        self.test_memory_context_storage()
+        self.test_memory_context_retrieval()
+        self.test_interaction_tracking()
+        self.test_personalized_suggestions_generation()
+        self.test_suggestion_dismissal()
+        self.test_memory_context_with_session_id()
+        self.test_learning_patterns_creation_and_updates()
+        self.test_suggestion_helper_functions()
+        self.test_memory_persistence_and_reference_tracking()
+        self.test_ai_memory_edge_cases()
+        
         # Summary
         print("\n" + "=" * 70)
         print("📊 TEST SUMMARY")
