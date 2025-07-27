@@ -97,21 +97,21 @@ const Register = () => {
   const selectedUserType = userTypes.find(type => type.value === formData.user_type);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sage-50 to-emerald-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-forest-50 via-book-page to-forest-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <Logo size="xl" showText={true} />
           </div>
-          <h2 className="text-3xl font-bold text-sage-800">
+          <h2 className="text-3xl font-bold text-forest-800">
             Join the community! 🎓
           </h2>
-          <p className="mt-2 text-sage-600">
+          <p className="mt-2 text-forest-600">
             Start your legal education journey today
           </p>
         </div>
         
-        <div className="bg-white rounded-3xl shadow-sage-lg p-8 border border-sage-100">
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-forest-200/50 p-8 border border-forest-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
