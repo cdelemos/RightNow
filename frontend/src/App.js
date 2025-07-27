@@ -131,8 +131,6 @@ function App() {
             <EmergencySOS />
           </ProtectedRoute>
         </BrowserRouter>
-          </Routes>
-        </BrowserRouter>
       </div>
     </AuthProvider>
   );
