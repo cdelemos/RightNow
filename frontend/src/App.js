@@ -12,6 +12,8 @@ import MythFeed from "./components/Myths/MythFeed";
 import SimulationPlayer from "./components/Simulations/SimulationPlayer";
 import CommunityQA from "./components/Community/CommunityQA";
 import LearningPaths from "./components/Learning/LearningPaths";
+import EmergencySOS from "./components/Emergency/EmergencySOS";
+import EmergencyContacts from "./components/Emergency/EmergencyContacts";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
