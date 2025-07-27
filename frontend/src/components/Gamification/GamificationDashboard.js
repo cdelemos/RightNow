@@ -200,7 +200,7 @@ const GamificationDashboard = () => {
 
       {/* Recent XP */}
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">⭐ Recent XP</h3>
+        <h3 className="text-xl font-semibold text-book-leather mb-4">⭐ Recent XP</h3>
         <div className="space-y-3">
           {recentXP?.slice(0, 5).map((xp, index) => (
             <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
