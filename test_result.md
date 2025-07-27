@@ -270,6 +270,18 @@ backend:
         agent: "testing"
         comment: "COMMUNITY Q&A SYSTEM TESTING COMPLETED - ALL CORE FEATURES FULLY OPERATIONAL. Comprehensive testing completed with 95.2% success rate (20/21 tests passed). All major Community Q&A features are working excellently: (1) Enhanced Q&A endpoints - POST /api/questions creates questions with 10 XP rewards, GET /api/questions returns questions with user interaction data, search, filtering, and sorting, GET /api/questions/{id} provides detailed question view with answers and voting data, POST /api/questions/{id}/answers submits answers with 15 XP rewards, GET /api/questions/user/my retrieves current user's questions with answer counts. (2) Comprehensive voting system - POST /api/questions/{id}/vote and POST /api/answers/{id}/vote handle upvote/downvote with proper vote toggling (can remove vote by voting again), vote changing (upvote to downvote and vice versa), vote counters automatically updated, 2 XP awarded for voting, 5 XP bonus for receiving upvotes, self-voting prevention working correctly. (3) Answer acceptance system - POST /api/answers/{id}/accept allows question authors to accept answers with 25 XP bonus, proper authorization prevents non-authors from accepting answers. (4) Enhanced search and filtering - Search by title, content, and tags working, category filtering by legal areas operational, sorting by recent/popular/unanswered functional, pagination with proper page/total handling, user interaction data (user_vote status) included in responses. (5) User enrichment - Author information (username, user_type, level) included in responses, view count tracking on question detail views, answer count tracking on questions, status updates when first answer posted. (6) Gamification integration - XP rewards: 10 XP for asking questions, 15 XP for answering, 2 XP for voting, 25 XP bonus for accepted answers, 5 XP for receiving upvotes, full integration with existing XP/gamification system. Minor issue: 1 test failed due to test data conflict (non-critical). The Community Q&A System provides comprehensive peer-to-peer discussion platform with proper gamification and social features, exceeding all specified requirements."
 
+  - task: "Advanced Learning Paths"
+    implemented: false
+    working: false
+    file: "server.py, components/Learning/LearningPaths.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Starting implementation of Advanced Learning Paths with personalized learning journeys. Will include purpose-driven content filtering, XP-gated unlocks, dynamic progression, and integration with existing features (AI, myths, simulations, Q&A)."
+
 frontend:
   - task: "Authentication Context and State Management"
     implemented: true
