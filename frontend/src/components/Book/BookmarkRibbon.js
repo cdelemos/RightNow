@@ -34,15 +34,15 @@ const BookmarkRibbon = () => {
   }, []);
 
   return (
-    <div className="absolute right-0 top-0 bottom-0 w-2 z-20">
+    <div className="absolute right-0 top-0 bottom-0 w-3 z-20">
       {/* Bookmark Ribbons */}
       <div className="relative h-full">
         {bookmarks.map((bookmark, index) => (
           <div
             key={bookmark.id}
-            className={`absolute right-0 w-8 h-24 ${bookmark.color} shadow-lg cursor-pointer transform hover:scale-110 transition-all duration-300`}
+            className={`absolute right-0 w-6 h-20 ${bookmark.color} shadow-lg cursor-pointer transform hover:scale-110 transition-all duration-300`}
             style={{
-              top: `${20 + index * 30}%`,
+              top: `${20 + index * 25}%`,
               clipPath: 'polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%)'
             }}
             onClick={() => setShowBookmarks(!showBookmarks)}
@@ -58,7 +58,7 @@ const BookmarkRibbon = () => {
 
       {/* Bookmark Index Panel */}
       {showBookmarks && (
-        <div className="absolute right-8 top-20 w-80 bg-book-page rounded-lg shadow-2xl border border-forest-200 z-30">
+        <div className="absolute right-6 top-20 w-72 bg-white rounded-lg shadow-2xl border border-forest-200 z-30">
           <div className="p-4 border-b border-forest-200">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-book-leather">📑 Saved Bookmarks</h3>
@@ -80,7 +80,7 @@ const BookmarkRibbon = () => {
                 <div className="flex items-center">
                   <div className={`w-3 h-3 ${bookmark.color} rounded-full mr-3`}></div>
                   <div>
-                    <div className="font-medium text-book-leather group-hover:text-forest-700">
+                    <div className="font-medium text-book-leather group-hover:text-forest-700 text-sm">
                       {bookmark.title}
                     </div>
                     <div className="text-xs text-forest-600">
@@ -97,7 +97,7 @@ const BookmarkRibbon = () => {
           </div>
           
           <div className="p-4 border-t border-forest-200">
-            <button className="w-full bg-forest-600 text-white py-2 rounded-lg hover:bg-forest-700 transition-colors">
+            <button className="w-full bg-forest-600 text-white py-2 rounded-lg hover:bg-forest-700 transition-colors text-sm">
               View All Bookmarks
             </button>
           </div>
