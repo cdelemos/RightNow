@@ -533,6 +533,18 @@ async def award_xp(user_id: str, xp_amount: int, action: str, context: Dict[str,
     
     # Update leaderboards
     await update_leaderboards(user_id, xp_amount)
+    
+    # Create XP notification
+    await create_notification(
+        user_id=user_id,
+        notification_type="xp_gained",
+        title=f"🎉 +{xp_amount} XP Earned!",
+        message=f"You earned {xp_amount} XP for {action.replace('_', ' ')}",
+        icon="⭐",
+        priority="normal",
+        action_url="/dashboard",
+        action_data={"xp_amount": xp_amount, "action": action}
+    )
 
 def calculate_level_from_xp(xp: int) -> int:
     """Calculate user level based on XP (progressive formula)"""
