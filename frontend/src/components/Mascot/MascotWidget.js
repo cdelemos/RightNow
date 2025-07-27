@@ -237,7 +237,7 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
       
       {/* Mascot */}
       <div
-        className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-sage-100 to-sage-200 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 flex items-center justify-center relative ${getAnimationClass()}`}
+        className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-amber-100 to-yellow-200 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 flex items-center justify-center relative ${getAnimationClass()}`}
         onClick={handleMascotClick}
         style={{ 
           backgroundColor: mascotState.appearance.color,
@@ -246,7 +246,7 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
       >
         <div className="text-3xl relative">
           {mascotState.appearance.emoji}
-          <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+          <div className="absolute -top-2 -right-2 text-xs">
             {mascotState.appearance.expression}
           </div>
         </div>
@@ -273,15 +273,15 @@ const MascotWidget = ({ position = 'bottom-left', size = 'medium' }) => {
       {/* Action buttons */}
       <div className="mt-2 flex space-x-1">
         <button
-          onClick={getStudyTip}
-          className="bg-sage-600 hover:bg-sage-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs transition-colors"
+          onClick={handleStudyTipClick}
+          className="bg-sage-600 hover:bg-sage-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs transition-colors shadow-md hover:shadow-lg"
           title="Get Study Tip"
         >
           💡
         </button>
         <button
-          onClick={loadMascotGreeting}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs transition-colors"
+          onClick={handleGreetingClick}
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs transition-colors shadow-md hover:shadow-lg"
           title="Say Hello"
         >
           👋
