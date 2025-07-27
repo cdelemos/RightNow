@@ -81,12 +81,16 @@ const GamificationDashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-sage-50 to-green-50 p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center py-12">
-            <div className="text-red-500 text-xl mb-4">⚠️</div>
-            <p className="text-gray-600">{error}</p>
-          </div>
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <p className="text-red-600 mb-4">Failed to load gamification data</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-forest-600 text-white px-4 py-2 rounded-lg hover:bg-forest-700"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
