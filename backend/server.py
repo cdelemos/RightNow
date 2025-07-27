@@ -4236,6 +4236,18 @@ async def check_protection_unlock(
         requirements = protection.get("unlock_requirements", {})
         user_stats = await db.user_stats.find_one({"user_id": current_user.id})
         
+        # If user has no stats, create default stats
+        if not user_stats:
+            user_stats = {
+                "learning_paths_completed": 0,
+                "statutes_read": 0,
+                "myths_read": 0,
+                "questions_asked": 0,
+                "answers_provided": 0,
+                "simulations_completed": 0,
+                "ai_chats_initiated": 0
+            }
+        
         can_unlock = True
         missing_requirements = []
         
