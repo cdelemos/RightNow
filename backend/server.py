@@ -1342,24 +1342,389 @@ def get_simulation_outcome_message(score_percentage: float, scenario: Simulation
     else:
         return f"🎯 Keep learning! This {scenario.category.replace('_', ' ')} scenario is challenging. Review the legal explanations and practice more to build your confidence!"
 
-# Learning Path endpoints
+# Enhanced Learning Path endpoints with personalization
 @api_router.get("/learning-paths", response_model=APIResponse)
 async def get_learning_paths(
-    user_type: Optional[UserType] = None,
+    path_type: Optional[LearningPathType] = None,
     difficulty: Optional[int] = None,
+    target_audience: Optional[str] = None,
+    personalized: bool = True,
+    page: int = 1,
+    per_page: int = 20,
     current_user: User = Depends(get_current_user)
 ):
+    """Get learning paths with personalization and user progress"""
     query = {"is_active": True}
-    if user_type:
-        query["target_user_types"] = {"$in": [user_type.value]}
+    if path_type:
+        query["path_type"] = path_type.value
     if difficulty:
         query["difficulty_level"] = difficulty
+    if target_audience:
+        query["target_audience"] = {"$in": [target_audience]}
     
-    paths = await db.learning_paths.find(query).to_list(100)
+    # Get user personalization if available
+    user_prefs = None
+    if personalized:
+        user_prefs = await db.user_personalizations.find_one({"user_id": current_user.id})
+    
+    total = await db.learning_paths.count_documents(query)
+    skip = (page - 1) * per_page
+    paths = await db.learning_paths.find(query).skip(skip).limit(per_page).to_list(per_page)
+    
+    # Enrich with user progress and personalization
+    enriched_paths = []
+    for path in paths:
+        path_obj = LearningPath(**path)
+        path_dict = path_obj.dict()
+        
+        # Get user progress
+        user_progress = await db.user_learning_progress.find_one({
+            "user_id": current_user.id,
+            "learning_path_id": path_obj.id
+        })
+        
+        if user_progress:
+            path_dict["user_progress"] = user_progress["progress_percentage"]
+            path_dict["user_completed"] = user_progress.get("is_completed", False)
+            path_dict["user_xp_earned"] = user_progress.get("total_xp_earned", 0)
+            path_dict["user_started"] = True
+        else:
+            path_dict["user_progress"] = 0.0
+            path_dict["user_completed"] = False
+            path_dict["user_xp_earned"] = 0
+            path_dict["user_started"] = False
+        
+        # Add personalization score if user preferences available
+        if user_prefs and personalized:
+            path_dict["relevance_score"] = calculate_path_relevance(path_obj, user_prefs)
+            path_dict["personalized_reason"] = get_personalization_reason(path_obj, user_prefs)
+        
+        # Check prerequisites
+        path_dict["prerequisites_met"] = await check_prerequisites_met(current_user.id, path_obj.prerequisites)
+        
+        enriched_paths.append(path_dict)
+    
+    # Sort by relevance if personalized
+    if personalized and user_prefs:
+        enriched_paths.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+    
     return APIResponse(
         success=True,
         message="Learning paths retrieved successfully",
-        data=[LearningPath(**path) for path in paths]
+        data=PaginatedResponse(
+            items=enriched_paths,
+            total=total,
+            page=page,
+            per_page=per_page,
+            pages=math.ceil(total / per_page)
+        ).dict()
+    )
+
+@api_router.post("/learning-paths/{path_id}/start", response_model=APIResponse)
+async def start_learning_path(path_id: str, current_user: User = Depends(get_current_user)):
+    """Start a learning path journey"""
+    path = await db.learning_paths.find_one({"id": path_id, "is_active": True})
+    if not path:
+        raise HTTPException(status_code=404, detail="Learning path not found")
+    
+    path_obj = LearningPath(**path)
+    
+    # Check prerequisites
+    prerequisites_met = await check_prerequisites_met(current_user.id, path_obj.prerequisites)
+    if not prerequisites_met:
+        raise HTTPException(status_code=400, detail="Prerequisites not met for this learning path")
+    
+    # Check if already started
+    existing_progress = await db.user_learning_progress.find_one({
+        "user_id": current_user.id,
+        "learning_path_id": path_id
+    })
+    
+    if existing_progress and not existing_progress.get("is_completed", False):
+        return APIResponse(
+            success=True,
+            message="Learning path already in progress",
+            data=UserLearningProgress(**existing_progress).dict()
+        )
+    
+    # Create new progress record
+    progress = UserLearningProgress(
+        user_id=current_user.id,
+        learning_path_id=path_id,
+        current_node_id=path_obj.start_node_id
+    )
+    
+    await db.user_learning_progress.insert_one(progress.dict())
+    
+    # Get the starting node with unlocked status
+    starting_node = await get_node_with_unlock_status(path_obj.start_node_id, path_obj, current_user.id)
+    
+    return APIResponse(
+        success=True,
+        message="Learning path started successfully",
+        data={
+            "progress": progress.dict(),
+            "current_node": starting_node,
+            "path_info": path_obj.dict()
+        }
+    )
+
+@api_router.get("/learning-paths/{path_id}", response_model=APIResponse)
+async def get_learning_path_detail(path_id: str, current_user: User = Depends(get_current_user)):
+    """Get detailed learning path with user progress and unlocked nodes"""
+    path = await db.learning_paths.find_one({"id": path_id, "is_active": True})
+    if not path:
+        raise HTTPException(status_code=404, detail="Learning path not found")
+    
+    path_obj = LearningPath(**path)
+    path_dict = path_obj.dict()
+    
+    # Get user progress
+    user_progress = await db.user_learning_progress.find_one({
+        "user_id": current_user.id,
+        "learning_path_id": path_id
+    })
+    
+    if user_progress:
+        path_dict["user_progress"] = UserLearningProgress(**user_progress).dict()
+    else:
+        path_dict["user_progress"] = None
+    
+    # Add unlock status to each node
+    enriched_nodes = []
+    for node in path_obj.path_nodes:
+        node_dict = node.dict()
+        node_dict["is_unlocked"] = await is_node_unlocked(node, user_progress, current_user.id)
+        node_dict["is_completed"] = node.id in (user_progress.get("completed_nodes", []) if user_progress else [])
+        enriched_nodes.append(node_dict)
+    
+    path_dict["path_nodes"] = enriched_nodes
+    
+    return APIResponse(
+        success=True,
+        message="Learning path details retrieved successfully",
+        data=path_dict
+    )
+
+@api_router.post("/learning-paths/{path_id}/nodes/{node_id}/complete", response_model=APIResponse)
+async def complete_learning_node(
+    path_id: str, 
+    node_id: str, 
+    completion_data: Dict[str, Any] = {},
+    current_user: User = Depends(get_current_user)
+):
+    """Complete a learning node and unlock next nodes"""
+    # Get learning path and progress
+    path = await db.learning_paths.find_one({"id": path_id, "is_active": True})
+    if not path:
+        raise HTTPException(status_code=404, detail="Learning path not found")
+    
+    path_obj = LearningPath(**path)
+    node = next((n for n in path_obj.path_nodes if n.id == node_id), None)
+    if not node:
+        raise HTTPException(status_code=404, detail="Learning node not found")
+    
+    # Get user progress
+    user_progress = await db.user_learning_progress.find_one({
+        "user_id": current_user.id,
+        "learning_path_id": path_id
+    })
+    
+    if not user_progress:
+        raise HTTPException(status_code=400, detail="Learning path not started")
+    
+    # Check if node is unlocked
+    if not await is_node_unlocked(node, user_progress, current_user.id):
+        raise HTTPException(status_code=400, detail="Node is not yet unlocked")
+    
+    # Validate completion criteria if any
+    if node.completion_criteria:
+        is_valid = await validate_completion_criteria(node.completion_criteria, completion_data, current_user.id)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail="Completion criteria not met")
+    
+    # Mark node as completed
+    completed_nodes = user_progress.get("completed_nodes", [])
+    if node_id not in completed_nodes:
+        completed_nodes.append(node_id)
+        
+        # Award XP
+        await award_xp(current_user.id, node.xp_reward, f"complete_learning_node")
+        
+        # Update progress
+        total_nodes = len(path_obj.path_nodes)
+        progress_percentage = len(completed_nodes) / total_nodes * 100
+        total_xp_earned = user_progress.get("total_xp_earned", 0) + node.xp_reward
+        
+        is_path_completed = len(completed_nodes) == total_nodes
+        update_data = {
+            "completed_nodes": completed_nodes,
+            "total_xp_earned": total_xp_earned,
+            "progress_percentage": progress_percentage,
+            "last_activity": datetime.utcnow()
+        }
+        
+        if is_path_completed:
+            update_data["is_completed"] = True
+            update_data["completed_at"] = datetime.utcnow()
+            # Award completion bonus
+            completion_bonus = max(50, path_obj.total_xp_reward // 4)
+            await award_xp(current_user.id, completion_bonus, f"complete_learning_path")
+            update_data["total_xp_earned"] += completion_bonus
+        
+        await db.user_learning_progress.update_one(
+            {"user_id": current_user.id, "learning_path_id": path_id},
+            {"$set": update_data}
+        )
+        
+        # Get newly unlocked nodes
+        updated_progress = await db.user_learning_progress.find_one({
+            "user_id": current_user.id,
+            "learning_path_id": path_id
+        })
+        
+        newly_unlocked = []
+        for path_node in path_obj.path_nodes:
+            if await is_node_unlocked(path_node, updated_progress, current_user.id):
+                if path_node.id not in completed_nodes:  # Not yet completed
+                    newly_unlocked.append(path_node.dict())
+        
+        return APIResponse(
+            success=True,
+            message="Learning node completed successfully",
+            data={
+                "xp_earned": node.xp_reward,
+                "total_xp_earned": update_data["total_xp_earned"],
+                "progress_percentage": progress_percentage,
+                "path_completed": is_path_completed,
+                "completion_bonus": completion_bonus if is_path_completed else 0,
+                "newly_unlocked_nodes": newly_unlocked
+            }
+        )
+    
+    else:
+        return APIResponse(
+            success=True,
+            message="Node already completed",
+            data={"already_completed": True}
+        )
+
+@api_router.post("/personalization", response_model=APIResponse)
+async def update_user_personalization(
+    personalization_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Update user personalization preferences"""
+    # Get existing personalization or create new
+    existing = await db.user_personalizations.find_one({"user_id": current_user.id})
+    
+    if existing:
+        # Update existing
+        update_data = {**personalization_data, "updated_at": datetime.utcnow()}
+        await db.user_personalizations.update_one(
+            {"user_id": current_user.id},
+            {"$set": update_data}
+        )
+        updated = await db.user_personalizations.find_one({"user_id": current_user.id})
+        personalization = UserPersonalization(**updated)
+    else:
+        # Create new
+        personalization = UserPersonalization(
+            user_id=current_user.id,
+            **personalization_data
+        )
+        await db.user_personalizations.insert_one(personalization.dict())
+    
+    return APIResponse(
+        success=True,
+        message="Personalization updated successfully",
+        data=personalization.dict()
+    )
+
+@api_router.get("/personalization", response_model=APIResponse)
+async def get_user_personalization(current_user: User = Depends(get_current_user)):
+    """Get user personalization preferences"""
+    personalization = await db.user_personalizations.find_one({"user_id": current_user.id})
+    
+    if personalization:
+        return APIResponse(
+            success=True,
+            message="Personalization retrieved successfully",
+            data=UserPersonalization(**personalization).dict()
+        )
+    else:
+        # Return default personalization
+        default_personalization = UserPersonalization(user_id=current_user.id)
+        return APIResponse(
+            success=True,
+            message="Default personalization returned",
+            data=default_personalization.dict()
+        )
+
+@api_router.get("/recommendations", response_model=APIResponse)
+async def get_personalized_recommendations(
+    content_types: Optional[str] = None,  # Comma-separated: "myths,simulations,learning_paths"
+    limit: int = 10,
+    current_user: User = Depends(get_current_user)
+):
+    """Get personalized content recommendations"""
+    # Get user personalization
+    user_prefs = await db.user_personalizations.find_one({"user_id": current_user.id})
+    if not user_prefs:
+        # Create basic recommendations for new users
+        return await get_general_recommendations(limit)
+    
+    recommendations = []
+    
+    # Parse content types
+    types_to_recommend = content_types.split(",") if content_types else ["learning_paths", "myths", "simulations", "qa_topics"]
+    
+    for content_type in types_to_recommend:
+        if content_type == "learning_paths":
+            path_recs = await recommend_learning_paths(user_prefs, current_user.id, limit // len(types_to_recommend))
+            recommendations.extend(path_recs)
+        elif content_type == "myths":
+            myth_recs = await recommend_myths(user_prefs, current_user.id, limit // len(types_to_recommend))
+            recommendations.extend(myth_recs)
+        elif content_type == "simulations":
+            sim_recs = await recommend_simulations(user_prefs, current_user.id, limit // len(types_to_recommend))
+            recommendations.extend(sim_recs)
+    
+    # Sort by confidence score
+    recommendations.sort(key=lambda x: x["confidence_score"], reverse=True)
+    
+    return APIResponse(
+        success=True,
+        message="Personalized recommendations retrieved successfully",
+        data=recommendations[:limit]
+    )
+
+@api_router.get("/learning-paths/user/progress", response_model=APIResponse)
+async def get_user_learning_progress(current_user: User = Depends(get_current_user)):
+    """Get user's learning path progress"""
+    progress_records = await db.user_learning_progress.find(
+        {"user_id": current_user.id}
+    ).sort("last_activity", -1).to_list(50)
+    
+    # Enrich with learning path information
+    enriched_progress = []
+    for record in progress_records:
+        progress_obj = UserLearningProgress(**record)
+        progress_dict = progress_obj.dict()
+        
+        # Get learning path info
+        path = await db.learning_paths.find_one({"id": progress_obj.learning_path_id})
+        if path:
+            progress_dict["path_title"] = path["title"]
+            progress_dict["path_type"] = path["path_type"]
+            progress_dict["path_difficulty"] = path["difficulty_level"]
+        
+        enriched_progress.append(progress_dict)
+    
+    return APIResponse(
+        success=True,
+        message="User learning progress retrieved successfully",
+        data=enriched_progress
     )
 
 # AI Chat endpoints
