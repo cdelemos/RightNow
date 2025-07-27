@@ -97,10 +97,7 @@ const AIChat = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        // Update memory display
-        if (memoryContextRef.current) {
-          memoryContextRef.current.loadMemoryContext();
-        }
+        // Note: Memory display will refresh automatically on next load
       }
     } catch (error) {
       console.error('Failed to store memory context:', error);
