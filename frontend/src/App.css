@@ -144,3 +144,64 @@
   border-bottom: 30px solid transparent;
   z-index: 2;
 }
+
+/* Fixed animations to prevent layout shifts */
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Prevent body scrolling on animations */
+.book-container {
+  overflow: hidden;
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Ensure progress bars don't cause overflow */
+.progress-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  transition: width 1s ease-out;
+  will-change: width;
+}
+
+/* Fix animation smoothness */
+* {
+  will-change: auto;
+}
+
+.animate-bounce-soft {
+  animation: bounce-soft 2s ease-in-out infinite;
+}
+
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Custom shadow utilities */
+.shadow-sage {
+  box-shadow: 0 4px 6px -1px rgba(113, 113, 122, 0.1), 0 2px 4px -1px rgba(113, 113, 122, 0.06);
+}
+
+.shadow-sage-lg {
+  box-shadow: 0 10px 15px -3px rgba(113, 113, 122, 0.1), 0 4px 6px -2px rgba(113, 113, 122, 0.05);
+}
