@@ -3659,7 +3659,7 @@ async def get_study_tip(current_user: User = Depends(get_current_user)):
     """Get a random study tip from the mascot"""
     try:
         mascot_engine = MascotInteractionEngine()
-        mascot_response = mascot_engine.get_random_study_tip()
+        mascot_response = mascot_engine.get_mascot_response(MascotAction.CONTEXTUAL_TOOLTIP, context={"context": "Study tip: Focus on understanding legal concepts, not just memorizing them."})
         
         # Save interaction
         interaction = MascotInteraction(
