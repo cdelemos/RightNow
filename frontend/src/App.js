@@ -70,9 +70,10 @@ function App() {
   return (
     <AuthProvider>
       <GamificationProvider>
-        <div className="App">
-          <BrowserRouter>
-            <Routes>
+        <UnlockProvider>
+          <div className="App">
+            <BrowserRouter>
+              <Routes>
               {/* Public routes */}
               <Route path="/login" element={
                 <PublicRoute>
