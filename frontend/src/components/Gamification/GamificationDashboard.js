@@ -221,7 +221,7 @@ const GamificationDashboard = () => {
       {/* Leaderboard Position */}
       {leaderboardPosition && (
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">🏅 Weekly Ranking</h3>
+          <h3 className="text-xl font-semibold text-book-leather mb-4">🏅 Weekly Ranking</h3>
           <div className="text-center">
             <div className="text-4xl font-bold text-purple-600 mb-2">
               #{leaderboardPosition.rank}
