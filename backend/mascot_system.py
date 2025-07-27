@@ -1,5 +1,5 @@
 # Mascot System for RightNow Legal Education Platform
-# The mascot "Juris" is a friendly owl representing wisdom and legal knowledge
+# The mascot "Gavvy the Gavel" represents protection, clarity, and legal empowerment
 
 from enum import Enum
 from typing import Dict, List, Optional, Any
@@ -7,252 +7,210 @@ from datetime import datetime
 import random
 
 class MascotMood(str, Enum):
-    HAPPY = "happy"
-    EXCITED = "excited"
-    ENCOURAGING = "encouraging"
-    PROUD = "proud"
-    THOUGHTFUL = "thoughtful"
-    CONCERNED = "concerned"
-    CELEBRATORY = "celebratory"
-    MOTIVATIONAL = "motivational"
+    PROTECTIVE = "protective"
+    CLEAR = "clear"
+    EMPOWERING = "empowering"
+    SERIOUS = "serious"
+    FOCUSED = "focused"
+    ALERT = "alert"
+    SUPPORTIVE = "supportive"
+    VIGILANT = "vigilant"
 
 class MascotAction(str, Enum):
     WELCOME = "welcome"
-    CONGRATULATE = "congratulate"
-    ENCOURAGE = "encourage"
-    CELEBRATE_LEVEL_UP = "celebrate_level_up"
-    CELEBRATE_BADGE = "celebrate_badge"
-    REMIND_STREAK = "remind_streak"
-    INTRODUCE_FEATURE = "introduce_feature"
-    STUDY_TIP = "study_tip"
-    DAILY_GREETING = "daily_greeting"
-    ACHIEVEMENT_UNLOCK = "achievement_unlock"
-    LEARNING_PATH_COMPLETE = "learning_path_complete"
-    FIRST_QUESTION = "first_question"
-    EMERGENCY_SOS_INTRO = "emergency_sos_intro"
+    LESSON_COMPLETE = "lesson_complete"
+    INCORRECT_ANSWER = "incorrect_answer"
+    EMERGENCY_SITUATION = "emergency_situation"
+    RIGHTS_UNLOCKED = "rights_unlocked"
+    TUTORIAL_INTRO = "tutorial_intro"
+    CONTEXTUAL_TOOLTIP = "contextual_tooltip"
+    PROTECTION_REMINDER = "protection_reminder"
+    CLARITY_EXPLANATION = "clarity_explanation"
+    UPL_WARNING = "upl_warning"
 
 class MascotPersonality:
-    """Juris the Owl - The wise legal mentor"""
+    """Gavvy the Gavel - The protective legal guardian"""
     
-    NAME = "Juris"
-    SPECIES = "Owl"
+    NAME = "Gavvy"
+    SPECIES = "Gavel"
     PERSONALITY_TRAITS = [
-        "Wise", "Encouraging", "Patient", "Knowledgeable", 
-        "Supportive", "Friendly", "Professional", "Motivational"
+        "Protective", "Clear", "Empowering", "Serious", 
+        "Focused", "Vigilant", "Supportive", "Professional"
     ]
     
     # Mascot appearance configurations
     APPEARANCES = {
-        MascotMood.HAPPY: {
-            "emoji": "🦉",
-            "expression": "^v^",
-            "color": "#8B4513",
-            "animation": "bounce"
+        MascotMood.PROTECTIVE: {
+            "emoji": "⚖️",
+            "expression": "🛡️",
+            "color": "#2B4C7E",
+            "animation": "steady"
         },
-        MascotMood.EXCITED: {
-            "emoji": "🦉",
-            "expression": "✨^v^✨",
-            "color": "#FFD700",
-            "animation": "pulse"
-        },
-        MascotMood.ENCOURAGING: {
-            "emoji": "🦉",
-            "expression": "◕v◕",
+        MascotMood.CLEAR: {
+            "emoji": "⚖️",
+            "expression": "💡",
             "color": "#4A90E2",
-            "animation": "sway"
+            "animation": "focus"
         },
-        MascotMood.PROUD: {
-            "emoji": "🦉",
-            "expression": "^◡^",
-            "color": "#32CD32",
-            "animation": "glow"
+        MascotMood.EMPOWERING: {
+            "emoji": "⚖️",
+            "expression": "💪",
+            "color": "#2E7D32",
+            "animation": "strength"
         },
-        MascotMood.THOUGHTFUL: {
-            "emoji": "🦉",
-            "expression": "◔v◔",
-            "color": "#9370DB",
-            "animation": "tilt"
+        MascotMood.SERIOUS: {
+            "emoji": "⚖️",
+            "expression": "⚠️",
+            "color": "#D32F2F",
+            "animation": "alert"
         },
-        MascotMood.CONCERNED: {
-            "emoji": "🦉",
-            "expression": "◕﹏◕",
-            "color": "#FF6B6B",
-            "animation": "gentle-sway"
+        MascotMood.FOCUSED: {
+            "emoji": "⚖️",
+            "expression": "🎯",
+            "color": "#7B1FA2",
+            "animation": "precision"
         },
-        MascotMood.CELEBRATORY: {
-            "emoji": "🦉",
-            "expression": "★^v^★",
-            "color": "#FF69B4",
-            "animation": "celebration"
+        MascotMood.ALERT: {
+            "emoji": "⚖️",
+            "expression": "🚨",
+            "color": "#FF5722",
+            "animation": "urgent"
         },
-        MascotMood.MOTIVATIONAL: {
-            "emoji": "🦉",
-            "expression": "◕︵◕",
-            "color": "#FF8C00",
-            "animation": "motivate"
+        MascotMood.SUPPORTIVE: {
+            "emoji": "⚖️",
+            "expression": "🤝",
+            "color": "#00796B",
+            "animation": "gentle"
+        },
+        MascotMood.VIGILANT: {
+            "emoji": "⚖️",
+            "expression": "👁️",
+            "color": "#5D4037",
+            "animation": "watchful"
         }
     }
 
 class MascotMessageBank:
-    """Comprehensive message bank for Juris the Owl"""
+    """Comprehensive message bank for Gavvy the Gavel"""
     
     MESSAGES = {
         MascotAction.WELCOME: {
-            MascotMood.HAPPY: [
-                "Welcome to RightNow Legal Education! I'm Juris, your wise legal companion. Let's embark on this journey of legal knowledge together! 🦉",
-                "Hoot hoot! I'm Juris, and I'm here to guide you through the fascinating world of law. Ready to learn something amazing today?",
-                "Hello there! I'm Juris the Owl, your legal mentor. I'm excited to help you discover the power of legal knowledge!"
+            MascotMood.PROTECTIVE: [
+                "Welcome to RightNow Legal Education. I'm Gavvy, your legal protection guide. Knowledge is your strongest defense.",
+                "I'm here to help you understand your rights and protections. Legal knowledge empowers you to navigate challenging situations.",
+                "Your legal education starts here. I'll guide you through the essential protections you need to know."
             ],
-            MascotMood.ENCOURAGING: [
-                "Welcome! I'm Juris, and I believe in your potential to master legal concepts. Every expert was once a beginner!",
-                "Greetings! I'm Juris, your legal guide. Remember, every great lawyer started with curiosity - just like you!"
+            MascotMood.EMPOWERING: [
+                "Every right you learn makes you stronger. I'm here to ensure you're prepared for what matters most.",
+                "Legal knowledge is power. Together, we'll build your understanding of the protections available to you."
             ]
         },
         
-        MascotAction.CONGRATULATE: {
-            MascotMood.PROUD: [
-                "Excellent work! You're making fantastic progress. I'm so proud of your dedication to learning!",
-                "Wonderful! Your commitment to understanding the law is truly inspiring. Keep up the great work!",
-                "Outstanding! You're building a solid foundation in legal knowledge. I'm impressed by your progress!"
+        MascotAction.LESSON_COMPLETE: {
+            MascotMood.EMPOWERING: [
+                "Well done. You've gained important knowledge that could protect you in real situations.",
+                "Another layer of protection learned. This knowledge strengthens your legal position.",
+                "You're building the legal awareness that matters. Keep developing these critical skills."
             ],
-            MascotMood.EXCITED: [
-                "Wow! That was amazing! You're really getting the hang of this legal stuff. I'm so excited for you!",
-                "Incredible! You just mastered another legal concept. This is so exciting to watch!"
+            MascotMood.FOCUSED: [
+                "Lesson completed. You now understand a key aspect of your legal protections.",
+                "This knowledge equips you for real-world situations. Stay focused on learning what protects you."
             ]
         },
         
-        MascotAction.ENCOURAGE: {
-            MascotMood.ENCOURAGING: [
-                "Don't worry, learning law takes time and practice. I'm here to support you every step of the way!",
-                "Remember, even the wisest owl had to learn to fly. You're doing great - keep going!",
-                "Legal concepts can be challenging, but you have what it takes. I believe in you!",
-                "Take your time and don't be hard on yourself. Every question you ask makes you wiser!"
+        MascotAction.INCORRECT_ANSWER: {
+            MascotMood.CLEAR: [
+                "Let's clarify this. Understanding the correct information is crucial for your protection.",
+                "This is important to get right. Misunderstanding legal concepts can put you at risk.",
+                "Take a moment to review. Accurate legal knowledge is essential for your safety."
             ],
-            MascotMood.MOTIVATIONAL: [
-                "You've got this! Legal knowledge is a powerful tool, and you're building that power every day.",
-                "Remember why you started this journey. Your dedication to justice and understanding is admirable!"
+            MascotMood.SERIOUS: [
+                "This requires careful attention. Legal mistakes can have serious consequences.",
+                "Let's ensure you understand this correctly. Your protection depends on accurate knowledge."
             ]
         },
         
-        MascotAction.CELEBRATE_LEVEL_UP: {
-            MascotMood.CELEBRATORY: [
-                "🎉 LEVEL UP! You've reached a new milestone in your legal education journey! I'm so proud of your achievement!",
-                "🌟 Congratulations on leveling up! Your dedication to learning is paying off. Onward to greater heights!",
-                "🎊 Level up achieved! You're becoming quite the legal scholar. I'm honored to be your guide!"
+        MascotAction.EMERGENCY_SITUATION: {
+            MascotMood.ALERT: [
+                "Emergency mode activated. Access your critical rights immediately.",
+                "This is urgent. I'm here to help you understand your immediate protections.",
+                "Emergency legal guidance is now available. Know your rights in this critical moment."
             ],
-            MascotMood.EXCITED: [
-                "WOW! Level up! This is incredible! You're really mastering legal concepts left and right!",
-                "Amazing! Another level conquered! Your legal knowledge is growing by leaps and bounds!"
+            MascotMood.PROTECTIVE: [
+                "Stay calm. You have rights that protect you. I'll guide you through what you need to know.",
+                "In emergencies, knowing your rights is crucial. Let me help you understand your protections."
             ]
         },
         
-        MascotAction.CELEBRATE_BADGE: {
-            MascotMood.PROUD: [
-                "🏆 Badge earned! You've demonstrated real expertise in this area. Well done!",
-                "🎖️ Congratulations on your new badge! This represents your hard work and dedication.",
-                "🏅 Badge unlocked! You're building an impressive collection of legal achievements!"
+        MascotAction.RIGHTS_UNLOCKED: {
+            MascotMood.EMPOWERING: [
+                "New protection unlocked. You now understand a critical right that could protect you.",
+                "This knowledge milestone reveals important legal protections in your area.",
+                "You've earned access to essential legal information. This empowers you in real situations."
             ],
-            MascotMood.CELEBRATORY: [
-                "✨ New badge! Fantastic work! Each badge represents your growing expertise in law.",
-                "🌟 Badge achieved! Your commitment to learning is truly paying off!"
+            MascotMood.FOCUSED: [
+                "Protection knowledge gained. You're building the legal awareness needed for real-world challenges.",
+                "This unlocked right provides you with specific protections. Understanding this strengthens your position."
             ]
         },
         
-        MascotAction.REMIND_STREAK: {
-            MascotMood.MOTIVATIONAL: [
-                "🔥 You're on a {streak_count}-day learning streak! Consistency is key to mastering legal concepts.",
-                "💪 {streak_count} days strong! Your dedication to daily learning is building real expertise.",
-                "⚡ {streak_count} days of learning! You're developing an excellent habit of legal study."
+        MascotAction.TUTORIAL_INTRO: {
+            MascotMood.CLEAR: [
+                "I'll guide you through this feature. Clear understanding leads to better protection.",
+                "Let me explain how this works. Each tool here serves to protect your rights.",
+                "This tutorial ensures you can effectively use these legal protections."
             ],
-            MascotMood.ENCOURAGING: [
-                "Keep that streak alive! {streak_count} days of consistent learning is impressive.",
-                "Your {streak_count}-day streak shows real commitment. I'm proud of your consistency!"
+            MascotMood.FOCUSED: [
+                "Pay attention to these details. Knowing how to use these tools could be critical.",
+                "I'm here to ensure you understand exactly how this feature protects you."
             ]
         },
         
-        MascotAction.INTRODUCE_FEATURE: {
-            MascotMood.EXCITED: [
-                "Let me show you something cool! This feature will help you learn more effectively.",
-                "I'm excited to introduce you to this powerful learning tool!",
-                "Check this out! This feature is designed to enhance your legal education experience."
+        MascotAction.CONTEXTUAL_TOOLTIP: {
+            MascotMood.CLEAR: [
+                "Key point: {context}. This information is important for your protection.",
+                "Remember: {context}. This could be crucial in a real situation.",
+                "Legal insight: {context}. Understanding this strengthens your legal position."
             ],
-            MascotMood.THOUGHTFUL: [
-                "Here's a feature that I think you'll find valuable for your legal studies.",
-                "This tool was designed with learners like you in mind. Let me explain how it works."
+            MascotMood.VIGILANT: [
+                "Stay aware: {context}. This knowledge helps you recognize important legal moments.",
+                "Critical detail: {context}. This understanding could make the difference."
             ]
         },
         
-        MascotAction.STUDY_TIP: {
-            MascotMood.THOUGHTFUL: [
-                "💡 Study tip: Try to connect new legal concepts to real-world situations you're familiar with.",
-                "🧠 Here's a tip: After reading about a legal principle, try to explain it in your own words.",
-                "📚 Study wisdom: Regular, short study sessions are more effective than cramming.",
-                "🔍 Tip: When learning about statutes, pay attention to the key terms and definitions.",
-                "📖 Study hack: Create mental connections between related legal concepts."
+        MascotAction.PROTECTION_REMINDER: {
+            MascotMood.PROTECTIVE: [
+                "Remember: You have rights that protect you. I'm here to help you understand them.",
+                "Your legal protections are real and enforceable. Stay informed about what shields you.",
+                "Legal knowledge is your shield. Continue learning about your protections."
             ],
-            MascotMood.ENCOURAGING: [
-                "Remember: The best way to learn law is through consistent practice and curiosity.",
-                "Pro tip: Don't just memorize - understand the 'why' behind legal principles."
+            MascotMood.VIGILANT: [
+                "Stay vigilant about your rights. Knowing them is the first step to protection.",
+                "Your legal protections require awareness to be effective. Keep learning."
             ]
         },
         
-        MascotAction.DAILY_GREETING: {
-            MascotMood.HAPPY: [
-                "Good morning! Ready to expand your legal knowledge today?",
-                "Hello there! What legal adventure shall we embark on today?",
-                "Welcome back! I'm excited to continue our legal learning journey together."
+        MascotAction.CLARITY_EXPLANATION: {
+            MascotMood.CLEAR: [
+                "Let me clarify this legal concept. Understanding is essential for your protection.",
+                "Here's what this means in practical terms. Clear comprehension keeps you safe.",
+                "This legal principle works like this: {explanation}. Clarity empowers you."
             ],
-            MascotMood.ENCOURAGING: [
-                "Great to see you again! Every day of learning makes you more knowledgeable.",
-                "Welcome back! Your commitment to learning is truly admirable."
+            MascotMood.FOCUSED: [
+                "Focus on this key point: {explanation}. This understanding is crucial.",
+                "Pay attention to this detail: {explanation}. It could be vital in real situations."
             ]
         },
         
-        MascotAction.ACHIEVEMENT_UNLOCK: {
-            MascotMood.CELEBRATORY: [
-                "🎯 Achievement unlocked! You've reached a significant milestone in your legal education!",
-                "🏆 New achievement! This represents your growing expertise and dedication.",
-                "⭐ Achievement earned! You're building an impressive portfolio of legal knowledge."
+        MascotAction.UPL_WARNING: {
+            MascotMood.SERIOUS: [
+                "⚠️ Important: This app provides general legal information only. For personal legal advice, consult a licensed attorney.",
+                "⚠️ Legal Notice: I cannot provide advice for your specific situation. Please seek professional legal counsel.",
+                "⚠️ Reminder: This is educational content, not legal advice. Consult an attorney for personal legal matters."
             ],
-            MascotMood.PROUD: [
-                "I'm so proud of this achievement! You've demonstrated real mastery of legal concepts.",
-                "This achievement is well-deserved! Your hard work is really paying off."
-            ]
-        },
-        
-        MascotAction.LEARNING_PATH_COMPLETE: {
-            MascotMood.CELEBRATORY: [
-                "🎓 Learning path completed! You've mastered another area of legal knowledge. Congratulations!",
-                "📚 Path complete! You've shown dedication and thoroughness in your legal studies.",
-                "🌟 Learning journey finished! You've gained valuable expertise in this legal area."
-            ],
-            MascotMood.PROUD: [
-                "I'm incredibly proud of you for completing this learning path! Your dedication is inspiring.",
-                "What an accomplishment! You've thoroughly explored this area of law."
-            ]
-        },
-        
-        MascotAction.FIRST_QUESTION: {
-            MascotMood.ENCOURAGING: [
-                "Great question! Asking questions is the foundation of legal learning. I'm here to help you explore the answers.",
-                "Excellent! Your curiosity is the key to understanding complex legal concepts.",
-                "Wonderful question! This is exactly how legal scholars think - by questioning and exploring."
-            ],
-            MascotMood.EXCITED: [
-                "I love your question! This is what makes legal learning so exciting - the quest for understanding.",
-                "Fantastic question! You're thinking like a true legal scholar already."
-            ]
-        },
-        
-        MascotAction.EMERGENCY_SOS_INTRO: {
-            MascotMood.CONCERNED: [
-                "I want to make sure you know about our Emergency SOS feature. Your safety and legal rights are important to me.",
-                "As your legal guide, I want you to be prepared for any situation. The Emergency SOS feature is here to help.",
-                "Knowledge is power, but in emergencies, having quick access to legal help is crucial. Let me show you the SOS feature."
-            ],
-            MascotMood.ENCOURAGING: [
-                "Being prepared for legal emergencies is part of being legally informed. I'm here to help you stay safe.",
-                "Your legal rights are always important, especially in emergency situations. I want to help you be prepared."
+            MascotMood.ALERT: [
+                "⚠️ Stop: This question requires professional legal advice. Please consult with a licensed attorney.",
+                "⚠️ Warning: I cannot advise on specific legal cases. Seek immediate legal counsel if needed."
             ]
         }
     }
@@ -272,7 +230,7 @@ class MascotInteractionEngine:
             mood = self._determine_mood_for_action(action)
         
         # Get appearance configuration
-        appearance = self.personality.APPEARANCES.get(mood, self.personality.APPEARANCES[MascotMood.HAPPY])
+        appearance = self.personality.APPEARANCES.get(mood, self.personality.APPEARANCES[MascotMood.PROTECTIVE])
         
         # Get message
         messages = self.message_bank.MESSAGES.get(action, {}).get(mood, [])
@@ -285,10 +243,10 @@ class MascotInteractionEngine:
         
         if not messages:
             # Ultimate fallback
-            messages = ["Hello! I'm Juris, your legal companion. I'm here to help you learn!"]
+            messages = ["I'm Gavvy, your legal protection guide. Knowledge is your strongest defense."]
         
-        # Select random message
-        message = random.choice(messages)
+        # Select message (not random for consistency)
+        message = messages[0]  # Use first message for consistency
         
         # Apply context formatting
         if context:
@@ -307,59 +265,49 @@ class MascotInteractionEngine:
     def _determine_mood_for_action(self, action: MascotAction) -> MascotMood:
         """Auto-determine appropriate mood for action"""
         mood_mapping = {
-            MascotAction.WELCOME: MascotMood.HAPPY,
-            MascotAction.CONGRATULATE: MascotMood.PROUD,
-            MascotAction.ENCOURAGE: MascotMood.ENCOURAGING,
-            MascotAction.CELEBRATE_LEVEL_UP: MascotMood.CELEBRATORY,
-            MascotAction.CELEBRATE_BADGE: MascotMood.PROUD,
-            MascotAction.REMIND_STREAK: MascotMood.MOTIVATIONAL,
-            MascotAction.INTRODUCE_FEATURE: MascotMood.EXCITED,
-            MascotAction.STUDY_TIP: MascotMood.THOUGHTFUL,
-            MascotAction.DAILY_GREETING: MascotMood.HAPPY,
-            MascotAction.ACHIEVEMENT_UNLOCK: MascotMood.CELEBRATORY,
-            MascotAction.LEARNING_PATH_COMPLETE: MascotMood.PROUD,
-            MascotAction.FIRST_QUESTION: MascotMood.ENCOURAGING,
-            MascotAction.EMERGENCY_SOS_INTRO: MascotMood.CONCERNED
+            MascotAction.WELCOME: MascotMood.PROTECTIVE,
+            MascotAction.LESSON_COMPLETE: MascotMood.EMPOWERING,
+            MascotAction.INCORRECT_ANSWER: MascotMood.CLEAR,
+            MascotAction.EMERGENCY_SITUATION: MascotMood.ALERT,
+            MascotAction.RIGHTS_UNLOCKED: MascotMood.EMPOWERING,
+            MascotAction.TUTORIAL_INTRO: MascotMood.CLEAR,
+            MascotAction.CONTEXTUAL_TOOLTIP: MascotMood.CLEAR,
+            MascotAction.PROTECTION_REMINDER: MascotMood.PROTECTIVE,
+            MascotAction.CLARITY_EXPLANATION: MascotMood.CLEAR,
+            MascotAction.UPL_WARNING: MascotMood.SERIOUS
         }
         
-        return mood_mapping.get(action, MascotMood.HAPPY)
+        return mood_mapping.get(action, MascotMood.PROTECTIVE)
     
-    def get_context_aware_response(self, user_stats: Dict[str, Any], recent_activity: str) -> Dict[str, Any]:
-        """Generate context-aware mascot responses based on user activity"""
-        
-        # Determine appropriate action based on recent activity
-        if recent_activity == "level_up":
-            action = MascotAction.CELEBRATE_LEVEL_UP
-        elif recent_activity == "badge_earned":
-            action = MascotAction.CELEBRATE_BADGE
-        elif recent_activity == "streak_milestone":
-            action = MascotAction.REMIND_STREAK
-            context = {"streak_count": user_stats.get("daily_streak", 0)}
-            return self.get_mascot_response(action, context=context)
-        elif recent_activity == "first_login":
-            action = MascotAction.WELCOME
-        elif recent_activity == "daily_return":
-            action = MascotAction.DAILY_GREETING
-        elif recent_activity == "achievement_unlock":
-            action = MascotAction.ACHIEVEMENT_UNLOCK
-        elif recent_activity == "learning_path_complete":
-            action = MascotAction.LEARNING_PATH_COMPLETE
-        elif recent_activity == "first_question":
-            action = MascotAction.FIRST_QUESTION
-        elif recent_activity == "need_encouragement":
-            action = MascotAction.ENCOURAGE
-        else:
-            action = MascotAction.DAILY_GREETING
-        
-        return self.get_mascot_response(action)
+    def get_tutorial_introduction(self, feature_name: str) -> Dict[str, Any]:
+        """Get tutorial introduction for a specific feature"""
+        return self.get_mascot_response(
+            MascotAction.TUTORIAL_INTRO,
+            context={"feature": feature_name}
+        )
     
-    def get_random_study_tip(self) -> Dict[str, Any]:
-        """Get a random study tip from Juris"""
-        return self.get_mascot_response(MascotAction.STUDY_TIP)
+    def get_contextual_tooltip(self, tooltip_context: str) -> Dict[str, Any]:
+        """Get contextual tooltip with legal insight"""
+        return self.get_mascot_response(
+            MascotAction.CONTEXTUAL_TOOLTIP,
+            context={"context": tooltip_context}
+        )
     
-    def get_emergency_sos_introduction(self) -> Dict[str, Any]:
-        """Get emergency SOS feature introduction"""
-        return self.get_mascot_response(MascotAction.EMERGENCY_SOS_INTRO)
+    def get_upl_warning(self, query_type: str = "general") -> Dict[str, Any]:
+        """Get UPL (Unauthorized Practice of Law) warning"""
+        mood = MascotMood.ALERT if query_type == "specific_case" else MascotMood.SERIOUS
+        return self.get_mascot_response(MascotAction.UPL_WARNING, mood=mood)
+    
+    def get_emergency_guidance(self) -> Dict[str, Any]:
+        """Get emergency situation guidance"""
+        return self.get_mascot_response(MascotAction.EMERGENCY_SITUATION)
+    
+    def get_rights_unlock_celebration(self, right_name: str, region: str = None) -> Dict[str, Any]:
+        """Get celebration for unlocked rights"""
+        context = {"right": right_name}
+        if region:
+            context["region"] = region
+        return self.get_mascot_response(MascotAction.RIGHTS_UNLOCKED, context=context)
 
 # Example usage and testing
 if __name__ == "__main__":
@@ -367,6 +315,6 @@ if __name__ == "__main__":
     
     # Test different mascot responses
     print("Welcome message:", engine.get_mascot_response(MascotAction.WELCOME))
-    print("Level up:", engine.get_mascot_response(MascotAction.CELEBRATE_LEVEL_UP))
-    print("Study tip:", engine.get_random_study_tip())
-    print("Emergency SOS:", engine.get_emergency_sos_introduction())
+    print("Lesson complete:", engine.get_mascot_response(MascotAction.LESSON_COMPLETE))
+    print("UPL warning:", engine.get_upl_warning())
+    print("Emergency guidance:", engine.get_emergency_guidance())
