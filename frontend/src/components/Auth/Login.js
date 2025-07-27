@@ -38,25 +38,25 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sage-50 to-emerald-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-forest-50 via-book-page to-forest-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <Logo size="xl" showText={true} />  
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-sage-800">
+          <h2 className="mt-6 text-3xl font-bold text-forest-800">
             Welcome back! 👋
           </h2>
-          <p className="mt-2 text-sage-600">
+          <p className="mt-2 text-forest-600">
             Continue your legal education journey
           </p>
         </div>
         
-        <div className="bg-white rounded-3xl shadow-sage-lg p-8 border border-sage-100">
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-forest-200/50 p-8 border border-forest-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-sage-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-forest-700 mb-2">
                   Email address
                 </label>
                 <input
@@ -65,7 +65,7 @@ const Login = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  className="w-full px-4 py-3 border border-forest-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent transition-all duration-200 bg-forest-50/50"
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={handleChange}
@@ -73,7 +73,7 @@ const Login = () => {
               </div>
               
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-sage-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-forest-700 mb-2">
                   Password
                 </label>
                 <input
@@ -82,7 +82,7 @@ const Login = () => {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  className="w-full px-4 py-3 border border-forest-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent transition-all duration-200 bg-forest-50/50"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
@@ -103,7 +103,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-white font-medium rounded-xl bg-gradient-to-r from-sage-500 to-sage-600 hover:from-sage-600 hover:to-sage-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sage-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 shadow-sage"
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-white font-medium rounded-xl bg-gradient-to-r from-forest-600 to-forest-700 hover:from-forest-700 hover:to-forest-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-forest-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 shadow-lg shadow-forest-200/50"
               >
                 {loading ? (
                   <div className="flex items-center">
@@ -122,9 +122,9 @@ const Login = () => {
             <div className="text-center">
               <Link
                 to="/register"
-                className="font-medium text-sage-600 hover:text-sage-500 transition-colors duration-200"
+                className="font-medium text-forest-600 hover:text-forest-500 transition-colors duration-200"
               >
-                Don't have an account? <span className="text-sage-700 font-semibold">Join the community!</span> 🎓
+                Don't have an account? <span className="text-forest-700 font-semibold">Join the community!</span> 🎓
               </Link>
             </div>
           </form>
@@ -132,8 +132,8 @@ const Login = () => {
 
         {/* Fun motivational element */}
         <div className="text-center">
-          <div className="inline-flex items-center bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-sage border border-sage-100">
-            <span className="text-sage-600 text-sm">
+          <div className="inline-flex items-center bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg shadow-forest-200/30 border border-forest-100">
+            <span className="text-forest-600 text-sm">
               <span className="animate-float inline-block mr-2">⚖️</span>
               Ready to level up your legal knowledge?
             </span>
