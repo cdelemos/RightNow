@@ -98,8 +98,8 @@ const DailyLearning = () => {
         </div>
       </div>
 
-      {/* Progress Ribbon - Compact */}
-      <div className="bg-gradient-to-r from-gold-50 to-amber-50 border border-gold-200 rounded-lg p-3 mb-4 animate-ribbon-float">
+      {/* Progress Ribbon - Fixed animation overflow */}
+      <div className="bg-gradient-to-r from-gold-50 to-amber-50 border border-gold-200 rounded-lg p-3 mb-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
             <span className="text-xl mr-2">🎯</span>
@@ -117,10 +117,10 @@ const DailyLearning = () => {
             </div>
           </div>
         </div>
-        <div className="w-full bg-gold-200 rounded-full h-1.5">
+        <div className="w-full bg-gold-200 rounded-full h-1.5 overflow-hidden">
           <div 
-            className="bg-gradient-to-r from-gold-400 to-gold-600 h-1.5 rounded-full transition-all duration-1000"
-            style={{ width: `${getProgressRibbon()}%` }}
+            className="bg-gradient-to-r from-gold-400 to-gold-600 h-1.5 rounded-full transition-all duration-1000 ease-out"
+            style={{ width: `${getProgressRibbon()}%`, minWidth: '2px' }}
           ></div>
         </div>
       </div>
