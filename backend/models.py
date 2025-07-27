@@ -705,6 +705,56 @@ class PersonalizedRecommendation(BaseModel):
     is_completed: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+# AI Memory and Suggestion Engine Models
+class UserLearningPattern(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    interaction_type: str  # "question", "statute_lookup", "myth_reading", "simulation", etc.
+    topic_category: str    # "housing", "employment", "criminal", "immigration", etc.
+    legal_concept: str     # Specific legal concept discussed
+    frequency_count: int = 1
+    last_interaction: datetime = Field(default_factory=datetime.utcnow)
+    engagement_level: float = 0.0  # 0.0-1.0 based on time spent, questions asked, etc.
+    comprehension_score: Optional[float] = None  # 0.0-1.0 based on follow-up questions
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UserInterestProfile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    protection_type: ProtectionType
+    interest_score: float = 0.0  # 0.0-1.0 calculated from interactions
+    knowledge_level: str = "beginner"  # beginner, intermediate, advanced
+    preferred_learning_style: str = "interactive"  # interactive, reading, simulation
+    last_updated: datetime = Field(default_factory=datetime.utcnow)
+
+class PersonalizedSuggestion(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    suggestion_type: str  # "statute", "myth", "simulation", "learning_path", "protection"
+    title: str
+    description: str
+    content_id: str  # ID of the suggested content
+    relevance_score: float = 0.0  # 0.0-1.0 based on user patterns
+    reasoning: str  # Why this is suggested
+    category: str
+    priority_level: int = 1  # 1=low, 2=medium, 3=high
+    is_dismissed: bool = False
+    is_viewed: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: Optional[datetime] = None
+
+class UserMemoryContext(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    session_id: str
+    context_type: str  # "legal_concept", "personal_situation", "recurring_question"
+    context_key: str   # Key identifier for the context
+    context_value: str # The actual context/memory
+    importance_score: float = 0.0  # 0.0-1.0 for relevance in future interactions
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_referenced: datetime = Field(default_factory=datetime.utcnow)
+    reference_count: int = 1
+
 # Purpose-Driven XP Unlocks Models
 class RegionalProtection(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
