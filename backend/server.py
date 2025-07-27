@@ -2910,7 +2910,7 @@ async def get_user_memory_context(
         return APIResponse(
             success=True,
             message="Memory context retrieved successfully",
-            data={"contexts": memory_contexts}
+            data={"contexts": [UserMemoryContext(**ctx).dict() for ctx in memory_contexts]}
         )
         
     except Exception as e:
