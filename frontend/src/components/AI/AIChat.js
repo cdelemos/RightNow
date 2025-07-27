@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import UPLRiskWarning, { useUPLRiskDetection } from '../UPL/UPLRiskWarning';
 import axios from 'axios';
 
 const AIChat = () => {
