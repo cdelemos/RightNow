@@ -3825,6 +3825,488 @@ async def mark_interactions_read(
         logging.error(f"Error marking interactions as read: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to mark interactions as read")
 
+# Personalized Learning by Protection Type endpoints
+@api_router.post("/personalization/setup-profile", response_model=APIResponse)
+async def setup_protection_profile(
+    profile_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Set up user's protection profile during onboarding"""
+    try:
+        # Create or update user protection profile
+        profile = UserProtectionProfile(
+            user_id=current_user.id,
+            primary_protection_type=ProtectionType(profile_data.get("primary_protection_type", "general")),
+            secondary_protection_types=[ProtectionType(t) for t in profile_data.get("secondary_protection_types", [])],
+            location_state=profile_data.get("location_state"),
+            location_city=profile_data.get("location_city"),
+            specific_concerns=profile_data.get("specific_concerns", []),
+            notification_preferences=profile_data.get("notification_preferences", {
+                "push_notifications": True,
+                "email_updates": True,
+                "sms_alerts": False
+            })
+        )
+        
+        # Save profile
+        await db.user_protection_profiles.replace_one(
+            {"user_id": current_user.id},
+            profile.dict(),
+            upsert=True
+        )
+        
+        # Generate initial personalized recommendations
+        await generate_personalized_recommendations(current_user.id)
+        
+        return APIResponse(
+            success=True,
+            message="Protection profile set up successfully",
+            data=profile.dict()
+        )
+        
+    except Exception as e:
+        logging.error(f"Error setting up protection profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to set up protection profile")
+
+@api_router.get("/personalization/recommendations", response_model=APIResponse)
+async def get_personalized_recommendations(
+    limit: int = 10,
+    current_user: User = Depends(get_current_user)
+):
+    """Get personalized content recommendations"""
+    try:
+        recommendations = await db.personalized_recommendations.find(
+            {"user_id": current_user.id, "is_viewed": False}
+        ).sort("relevance_score", -1).limit(limit).to_list(limit)
+        
+        # Enrich recommendations with content details
+        enriched_recommendations = []
+        for rec in recommendations:
+            content_details = await get_content_details(rec["content_id"], rec["content_type"])
+            if content_details:
+                enriched_recommendations.append({
+                    "recommendation": PersonalizedRecommendation(**rec).dict(),
+                    "content": content_details
+                })
+        
+        return APIResponse(
+            success=True,
+            message="Personalized recommendations retrieved successfully",
+            data=enriched_recommendations
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting personalized recommendations: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get personalized recommendations")
+
+async def get_content_details(content_id: str, content_type: str) -> Optional[Dict[str, Any]]:
+    """Get content details based on type"""
+    try:
+        if content_type == "statute":
+            content = await db.legal_statutes.find_one({"id": content_id})
+        elif content_type == "myth":
+            content = await db.legal_myths.find_one({"id": content_id})
+        elif content_type == "simulation":
+            content = await db.simulation_scenarios.find_one({"id": content_id})
+        elif content_type == "learning_path":
+            content = await db.learning_paths.find_one({"id": content_id})
+        else:
+            return None
+        
+        return content
+    except Exception as e:
+        logging.error(f"Error getting content details: {str(e)}")
+        return None
+
+async def generate_personalized_recommendations(user_id: str):
+    """Generate personalized content recommendations for user"""
+    try:
+        # Get user's protection profile
+        profile = await db.user_protection_profiles.find_one({"user_id": user_id})
+        if not profile:
+            return
+        
+        protection_types = [profile["primary_protection_type"]] + profile.get("secondary_protection_types", [])
+        
+        # Find relevant content tags
+        relevant_tags = await db.content_tags.find({
+            "protection_types": {"$in": protection_types}
+        }).to_list(100)
+        
+        # Generate recommendations based on relevance
+        recommendations = []
+        for tag in relevant_tags:
+            recommendation = PersonalizedRecommendation(
+                user_id=user_id,
+                content_id=tag["content_id"],
+                content_type=tag["content_type"],
+                protection_type=ProtectionType(profile["primary_protection_type"]),
+                relevance_score=tag["relevance_score"],
+                reason=f"Recommended for {profile['primary_protection_type']} protection needs"
+            )
+            recommendations.append(recommendation.dict())
+        
+        if recommendations:
+            await db.personalized_recommendations.insert_many(recommendations)
+            
+    except Exception as e:
+        logging.error(f"Error generating personalized recommendations: {str(e)}")
+
+# Purpose-Driven XP Unlocks endpoints
+@api_router.get("/unlocks/trophy-wall", response_model=APIResponse)
+async def get_trophy_wall(current_user: User = Depends(get_current_user)):
+    """Get user's trophy wall with unlocked protections"""
+    try:
+        # Get user's trophy wall
+        trophy_wall = await db.trophy_walls.find_one({"user_id": current_user.id})
+        if not trophy_wall:
+            trophy_wall = TrophyWall(user_id=current_user.id)
+            await db.trophy_walls.insert_one(trophy_wall.dict())
+        
+        # Get unlocked protections details
+        unlocked_protections = await db.unlocked_protections.find(
+            {"user_id": current_user.id}
+        ).to_list(100)
+        
+        # Get protection details
+        protection_details = []
+        for unlocked in unlocked_protections:
+            protection = await db.regional_protections.find_one({"id": unlocked["protection_id"]})
+            if protection:
+                protection_details.append({
+                    "protection": RegionalProtection(**protection).dict(),
+                    "unlocked_at": unlocked["unlocked_at"],
+                    "is_bookmarked": unlocked.get("is_bookmarked", False)
+                })
+        
+        return APIResponse(
+            success=True,
+            message="Trophy wall retrieved successfully",
+            data={
+                "trophy_wall": TrophyWall(**trophy_wall).dict(),
+                "unlocked_protections": protection_details
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting trophy wall: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get trophy wall")
+
+@api_router.post("/unlocks/check-unlock", response_model=APIResponse)
+async def check_protection_unlock(
+    protection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Check if user can unlock a protection"""
+    try:
+        # Get protection details
+        protection = await db.regional_protections.find_one({"id": protection_id})
+        if not protection:
+            raise HTTPException(status_code=404, detail="Protection not found")
+        
+        # Check if already unlocked
+        already_unlocked = await db.unlocked_protections.find_one({
+            "user_id": current_user.id,
+            "protection_id": protection_id
+        })
+        
+        if already_unlocked:
+            return APIResponse(
+                success=True,
+                message="Protection already unlocked",
+                data={"can_unlock": False, "already_unlocked": True}
+            )
+        
+        # Check unlock requirements
+        requirements = protection.get("unlock_requirements", {})
+        user_stats = await db.user_stats.find_one({"user_id": current_user.id})
+        
+        can_unlock = True
+        missing_requirements = []
+        
+        if "lessons_completed" in requirements:
+            completed_lessons = user_stats.get("learning_paths_completed", 0)
+            if completed_lessons < requirements["lessons_completed"]:
+                can_unlock = False
+                missing_requirements.append(f"Complete {requirements['lessons_completed'] - completed_lessons} more lessons")
+        
+        if "xp_required" in requirements:
+            user_xp = current_user.xp
+            if user_xp < requirements["xp_required"]:
+                can_unlock = False
+                missing_requirements.append(f"Earn {requirements['xp_required'] - user_xp} more XP")
+        
+        if can_unlock:
+            # Unlock the protection
+            unlocked_protection = UnlockedProtection(
+                user_id=current_user.id,
+                protection_id=protection_id
+            )
+            await db.unlocked_protections.insert_one(unlocked_protection.dict())
+            
+            # Update trophy wall
+            await update_trophy_wall(current_user.id)
+            
+            # Trigger mascot celebration
+            mascot_engine = MascotInteractionEngine()
+            celebration = mascot_engine.get_rights_unlock_celebration(
+                protection["statute_title"],
+                protection.get("state")
+            )
+            
+            return APIResponse(
+                success=True,
+                message="Protection unlocked successfully!",
+                data={
+                    "can_unlock": True,
+                    "protection": RegionalProtection(**protection).dict(),
+                    "celebration": celebration
+                }
+            )
+        else:
+            return APIResponse(
+                success=True,
+                message="Requirements not met",
+                data={
+                    "can_unlock": False,
+                    "missing_requirements": missing_requirements
+                }
+            )
+        
+    except Exception as e:
+        logging.error(f"Error checking protection unlock: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to check protection unlock")
+
+async def update_trophy_wall(user_id: str):
+    """Update user's trophy wall statistics"""
+    try:
+        unlocked_count = await db.unlocked_protections.count_documents({"user_id": user_id})
+        total_count = await db.regional_protections.count_documents({})
+        
+        completion_percentage = (unlocked_count / max(total_count, 1)) * 100
+        
+        await db.trophy_walls.update_one(
+            {"user_id": user_id},
+            {
+                "$set": {
+                    "total_protections_available": total_count,
+                    "completion_percentage": completion_percentage,
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+        
+    except Exception as e:
+        logging.error(f"Error updating trophy wall: {str(e)}")
+
+# UPL Risk Flagging endpoints
+@api_router.post("/upl/check-query", response_model=APIResponse)
+async def check_upl_risk(
+    query_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Check query for UPL risk and flag if necessary"""
+    try:
+        query_text = query_data.get("query", "").lower()
+        
+        # Get UPL settings
+        upl_settings = await db.upl_settings.find_one({}) or UPLSettings().dict()
+        
+        if not upl_settings.get("enabled", True):
+            return APIResponse(
+                success=True,
+                message="UPL checking disabled",
+                data={"risk_level": "low", "warning_needed": False}
+            )
+        
+        # Check for risk keywords
+        risk_score = 0
+        flagged_keywords = []
+        
+        for category, keywords in upl_settings.get("risk_keywords", {}).items():
+            for keyword in keywords:
+                if keyword.lower() in query_text:
+                    risk_score += 1
+                    flagged_keywords.append(keyword)
+        
+        # Determine risk level
+        thresholds = upl_settings.get("risk_thresholds", {"medium": 2, "high": 3, "critical": 5})
+        
+        if risk_score >= thresholds.get("critical", 5):
+            risk_level = UPLRiskLevel.CRITICAL
+        elif risk_score >= thresholds.get("high", 3):
+            risk_level = UPLRiskLevel.HIGH
+        elif risk_score >= thresholds.get("medium", 2):
+            risk_level = UPLRiskLevel.MEDIUM
+        else:
+            risk_level = UPLRiskLevel.LOW
+        
+        # Log UPL flag if medium or higher
+        if risk_level != UPLRiskLevel.LOW:
+            upl_flag = UPLFlag(
+                user_id=current_user.id,
+                query_text=query_text,
+                risk_level=risk_level,
+                flag_reason=f"Detected {len(flagged_keywords)} risk keywords",
+                flagged_keywords=flagged_keywords,
+                action_taken="warning_shown" if risk_level != UPLRiskLevel.CRITICAL else "query_blocked"
+            )
+            await db.upl_flags.insert_one(upl_flag.dict())
+        
+        # Get appropriate warning message
+        warning_needed = risk_level != UPLRiskLevel.LOW
+        warning_message = None
+        
+        if warning_needed:
+            mascot_engine = MascotInteractionEngine()
+            warning_type = "specific_case" if risk_level == UPLRiskLevel.CRITICAL else "general"
+            warning_response = mascot_engine.get_upl_warning(warning_type)
+            warning_message = warning_response["message"]
+        
+        return APIResponse(
+            success=True,
+            message="UPL risk check completed",
+            data={
+                "risk_level": risk_level.value,
+                "risk_score": risk_score,
+                "flagged_keywords": flagged_keywords,
+                "warning_needed": warning_needed,
+                "warning_message": warning_message,
+                "block_query": risk_level == UPLRiskLevel.CRITICAL
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error checking UPL risk: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to check UPL risk")
+
+# AI Memory & Suggestion Engine endpoints
+@api_router.post("/ai/memory/update", response_model=APIResponse)
+async def update_ai_memory(
+    memory_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Update AI memory with user interaction"""
+    try:
+        topic = memory_data.get("topic", "").lower()
+        subtopics = memory_data.get("subtopics", [])
+        user_feedback = memory_data.get("user_feedback")
+        
+        # Find or create AI memory entry
+        existing_memory = await db.ai_memories.find_one({
+            "user_id": current_user.id,
+            "topic": topic
+        })
+        
+        if existing_memory:
+            # Update existing memory
+            await db.ai_memories.update_one(
+                {"user_id": current_user.id, "topic": topic},
+                {
+                    "$set": {
+                        "last_interaction": datetime.utcnow(),
+                        "user_feedback": user_feedback,
+                        "needs_follow_up": memory_data.get("needs_follow_up", False)
+                    },
+                    "$inc": {"interaction_count": 1},
+                    "$addToSet": {"subtopics": {"$each": subtopics}}
+                }
+            )
+        else:
+            # Create new memory entry
+            memory = AIMemory(
+                user_id=current_user.id,
+                topic=topic,
+                subtopics=subtopics,
+                user_feedback=user_feedback,
+                needs_follow_up=memory_data.get("needs_follow_up", False)
+            )
+            await db.ai_memories.insert_one(memory.dict())
+        
+        # Generate learning recommendations
+        await generate_ai_recommendations(current_user.id, topic)
+        
+        return APIResponse(
+            success=True,
+            message="AI memory updated successfully",
+            data={"updated": True}
+        )
+        
+    except Exception as e:
+        logging.error(f"Error updating AI memory: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update AI memory")
+
+@api_router.get("/ai/suggestions", response_model=APIResponse)
+async def get_ai_suggestions(
+    current_user: User = Depends(get_current_user)
+):
+    """Get AI-generated learning suggestions"""
+    try:
+        # Get recent AI memories
+        memories = await db.ai_memories.find(
+            {"user_id": current_user.id}
+        ).sort("last_interaction", -1).limit(10).to_list(10)
+        
+        # Get learning recommendations
+        recommendations = await db.learning_recommendations.find(
+            {"user_id": current_user.id, "is_viewed": False}
+        ).sort("confidence_score", -1).limit(5).to_list(5)
+        
+        # Enrich recommendations with content details
+        enriched_recommendations = []
+        for rec in recommendations:
+            content_details = await get_content_details(rec["recommended_content_id"], rec["content_type"])
+            if content_details:
+                enriched_recommendations.append({
+                    "recommendation": LearningRecommendation(**rec).dict(),
+                    "content": content_details
+                })
+        
+        return APIResponse(
+            success=True,
+            message="AI suggestions retrieved successfully",
+            data={
+                "memories": [AIMemory(**memory).dict() for memory in memories],
+                "recommendations": enriched_recommendations
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error getting AI suggestions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get AI suggestions")
+
+async def generate_ai_recommendations(user_id: str, topic: str):
+    """Generate AI-powered learning recommendations"""
+    try:
+        # Get user's learning patterns
+        pattern = await db.user_learning_patterns.find_one({"user_id": user_id})
+        if not pattern:
+            return
+        
+        # Generate recommendations based on topic and patterns
+        # This is a simplified version - in production, use ML/AI for better recommendations
+        related_content = await db.learning_paths.find({
+            "title": {"$regex": topic, "$options": "i"}
+        }).limit(3).to_list(3)
+        
+        recommendations = []
+        for content in related_content:
+            recommendation = LearningRecommendation(
+                user_id=user_id,
+                recommended_content_id=content["id"],
+                content_type="learning_path",
+                recommendation_reason=f"Based on your interest in {topic}",
+                confidence_score=0.8
+            )
+            recommendations.append(recommendation.dict())
+        
+        if recommendations:
+            await db.learning_recommendations.insert_many(recommendations)
+            
+    except Exception as e:
+        logging.error(f"Error generating AI recommendations: {str(e)}")
+
 # Include the router in the main app
 app.include_router(api_router)
 
