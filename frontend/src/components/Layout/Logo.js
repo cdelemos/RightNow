@@ -18,7 +18,7 @@ const Logo = ({ size = 'md', showText = true, className = '' }) => {
   return (
     <div className={`flex items-center space-x-3 ${className}`}>
       {/* Logo Icon */}
-      <div className={`${sizeClasses[size]} bg-sage-500 rounded-2xl flex items-center justify-center relative overflow-hidden shadow-sage`}>
+      <div className={`${sizeClasses[size]} bg-forest-600 rounded-2xl flex items-center justify-center relative overflow-hidden shadow-lg shadow-forest-200/50`}>
         {/* Clock Background */}
         <div className="absolute inset-0 flex items-center justify-center">
           <svg 
@@ -46,7 +46,7 @@ const Logo = ({ size = 'md', showText = true, className = '' }) => {
       
       {/* Logo Text */}
       {showText && (
-        <div className={`font-display font-bold text-sage-700 ${textSizes[size]}`}>
+        <div className={`font-display font-bold text-forest-800 ${textSizes[size]}`}>
           RightNow
         </div>
       )}
