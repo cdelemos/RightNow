@@ -716,6 +716,18 @@ async def handle_level_up(user_id: str, new_level: int, old_level: int):
         context={"old_level": old_level, "new_level": new_level}
     )
     await db.xp_transactions.insert_one(xp_transaction.dict())
+    
+    # Create level up notification
+    await create_notification(
+        user_id=user_id,
+        notification_type="level_up",
+        title=f"🌟 Level Up! You're now Level {new_level}!",
+        message=f"Congratulations! You've advanced from Level {old_level} to Level {new_level}. Keep up the great work!",
+        icon="🏆",
+        priority="high",
+        action_url="/dashboard",
+        action_data={"old_level": old_level, "new_level": new_level, "bonus_xp": level_bonus}
+    )
 
 async def check_and_award_badges(user_id: str, level: int, action: str):
     """Check if user should receive any badges"""
