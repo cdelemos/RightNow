@@ -19,6 +19,7 @@ import EmergencyContacts from "./components/Emergency/EmergencyContacts";
 import GamificationDashboard from "./components/Gamification/GamificationDashboard";
 import GamificationWidget from "./components/Gamification/GamificationWidget";
 import MascotWidget from "./components/Mascot/MascotWidget";
+import TrophyWall from "./components/Unlocks/TrophyWall";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
