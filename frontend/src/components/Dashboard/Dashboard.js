@@ -108,7 +108,7 @@ const Dashboard = () => {
       gradient: 'from-sage-400 to-sage-600',
       bgGradient: 'from-sage-50 to-sage-100',
       textColor: 'text-sage-700',
-      available: false
+      available: true
     }
   ];
 
