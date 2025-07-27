@@ -3549,7 +3549,8 @@ async def get_gamification_dashboard(current_user: User = Depends(get_current_us
         streaks = []
         try:
             streaks_cursor = db.streaks.find({"user_id": current_user.id})
-            streaks = await streaks_cursor.to_list(10)
+            streaks_raw = await streaks_cursor.to_list(10)
+            streaks = [clean_mongo_document(streak) for streak in streaks_raw]
         except Exception as e:
             logging.warning(f"Error fetching streaks: {str(e)}")
             # Fallback streak
@@ -3559,7 +3560,7 @@ async def get_gamification_dashboard(current_user: User = Depends(get_current_us
                     "streak_type": "daily_learning",
                     "current_streak": current_user.streak_days,
                     "longest_streak": current_user.streak_days,
-                    "last_activity": datetime.utcnow()
+                    "last_activity": datetime.utcnow().isoformat()
                 }
             ]
         
