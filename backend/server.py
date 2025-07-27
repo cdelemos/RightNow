@@ -3521,6 +3521,7 @@ async def initialize_learning_paths():
         created_paths.append(learning_path)
     
     await db.learning_paths.insert_many([path.dict() for path in created_paths])
+
 # Emergency SOS endpoints - Critical safety features
 @api_router.post("/emergency/contacts", response_model=APIResponse)
 async def create_emergency_contact(contact_data: EmergencyContactCreate, current_user: User = Depends(get_current_user)):
