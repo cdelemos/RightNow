@@ -205,8 +205,8 @@ const GamificationDashboard = () => {
           {recentXP?.slice(0, 5).map((xp, index) => (
             <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
               <div className="flex-1">
-                <div className="font-medium text-gray-800 text-sm">{xp.description}</div>
-                <div className="text-xs text-gray-600">
+                <div className="font-medium text-book-leather text-sm">{xp.description}</div>
+                <div className="text-xs text-forest-600">
                   {new Date(xp.created_at).toLocaleDateString()}
                 </div>
               </div>
