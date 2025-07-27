@@ -20,9 +20,9 @@ const TableOfContents = ({ onNavigate }) => {
       icon: '🛡️',
       description: 'Critical safety tools and resources',
       pages: [
-        { title: 'SOS Tools', href: '/emergency-contacts', icon: '🚨' },
-        { title: 'Know Your Scripts', href: '/scripts', icon: '📝' },
-        { title: 'Emergency Contacts', href: '/contacts', icon: '📞' },
+        { title: 'Emergency SOS', href: '/emergency-contacts', icon: '🚨' },
+        { title: 'Know Your Scripts', href: '/ai-chat', icon: '📝' },
+        { title: 'Simulations', href: '/simulations', icon: '🎮' },
       ]
     },
     {
@@ -32,7 +32,6 @@ const TableOfContents = ({ onNavigate }) => {
       pages: [
         { title: 'AI Assistant', href: '/ai-chat', icon: '💬' },
         { title: 'Legal Q&A', href: '/questions', icon: '❓' },
-        { title: 'Case Studies', href: '/cases', icon: '📋' },
       ]
     },
     {
@@ -40,19 +39,8 @@ const TableOfContents = ({ onNavigate }) => {
       icon: '🏆',
       description: 'Track progress and achievements',
       pages: [
-        { title: 'Justice Meter', href: '/justice-meter', icon: '📊' },
-        { title: 'Achievements', href: '/achievements', icon: '🏅' },
-        { title: 'Profile', href: '/profile', icon: '👤' },
-      ]
-    },
-    {
-      title: 'Daily Myths & Scripts',
-      icon: '📰',
-      description: 'Daily learning and practice',
-      pages: [
+        { title: 'Gamification Hub', href: '/gamification', icon: '🎮' },
         { title: 'Daily Learning', href: '/dashboard', icon: '📖' },
-        { title: 'Simulations', href: '/simulations', icon: '🎮' },
-        { title: 'Practice Arena', href: '/practice', icon: '🥊' },
       ]
     }
   ];
@@ -63,24 +51,22 @@ const TableOfContents = ({ onNavigate }) => {
   };
 
   return (
-    <div className="h-full p-8 overflow-y-auto">
+    <div className="p-6">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-book-leather mb-2">
-          Table of Contents
-        </h1>
-        <div className="w-24 h-1 bg-gradient-to-r from-gold-400 to-gold-600 mx-auto rounded-full"></div>
+      <div className="text-center mb-6">
+        <div className="w-20 h-1 bg-gradient-to-r from-gold-400 to-gold-600 mx-auto rounded-full mb-4"></div>
+        <p className="text-forest-600">Navigate to any section quickly</p>
       </div>
 
       {/* Chapters */}
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {chapters.map((chapter, index) => (
-          <div key={index} className="group">
+          <div key={index} className="bg-gradient-to-br from-forest-50 to-forest-100 rounded-lg p-6 border border-forest-200 hover:shadow-lg transition-shadow">
             {/* Chapter Title */}
-            <div className="flex items-center mb-3 p-3 rounded-lg hover:bg-forest-50 transition-colors cursor-pointer">
-              <div className="text-2xl mr-3">{chapter.icon}</div>
+            <div className="flex items-center mb-4">
+              <div className="text-3xl mr-3">{chapter.icon}</div>
               <div>
-                <h3 className="text-lg font-bold text-book-leather group-hover:text-forest-700">
+                <h3 className="text-lg font-bold text-book-leather">
                   {chapter.title}
                 </h3>
                 <p className="text-sm text-forest-600">{chapter.description}</p>
@@ -88,12 +74,12 @@ const TableOfContents = ({ onNavigate }) => {
             </div>
 
             {/* Chapter Pages */}
-            <div className="ml-10 space-y-2">
+            <div className="space-y-2">
               {chapter.pages.map((page, pageIndex) => (
                 <button
                   key={pageIndex}
                   onClick={() => handleChapterClick(page.href)}
-                  className="flex items-center w-full text-left p-2 rounded-lg hover:bg-gold-50 hover:shadow-md transition-all duration-200 group"
+                  className="flex items-center w-full text-left p-3 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 group"
                 >
                   <span className="text-lg mr-3">{page.icon}</span>
                   <span className="text-forest-700 group-hover:text-book-leather font-medium">
