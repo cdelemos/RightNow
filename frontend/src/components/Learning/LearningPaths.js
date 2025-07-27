@@ -444,9 +444,10 @@ const LearningPaths = () => {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {learningPaths.map((path) => {
                   const pathTypeInfo = getPathTypeInfo(path.path_type);
+                  const colorClasses = getPathTypeColorClasses(path.path_type);
                   return (
                     <div key={path.id} className="bg-white rounded-3xl shadow-sage-lg border border-sage-100 overflow-hidden hover:shadow-sage-xl transition-shadow">
-                      <div className={`bg-gradient-to-r from-${pathTypeInfo.color}-400 to-${pathTypeInfo.color}-600 p-6 text-white`}>
+                      <div className={`bg-gradient-to-r ${colorClasses.gradient} p-6 text-white`}>
                         <div className="flex items-center justify-between mb-4">
                           <span className="text-3xl">{pathTypeInfo.emoji}</span>
                           <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(path.difficulty_level)}`}>
@@ -491,7 +492,7 @@ const LearningPaths = () => {
                             </div>
                             <div className="w-full bg-sage-200 rounded-full h-2">
                               <div 
-                                className={`bg-gradient-to-r from-${pathTypeInfo.color}-400 to-${pathTypeInfo.color}-500 h-2 rounded-full`}
+                                className={`bg-gradient-to-r ${colorClasses.progressGradient} h-2 rounded-full`}
                                 style={{ width: `${path.user_progress}%` }}
                               ></div>
                             </div>
@@ -531,10 +532,10 @@ const LearningPaths = () => {
                             !path.prerequisites_met
                               ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                               : path.user_completed
-                              ? `bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white`
+                              ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
                               : path.user_started
-                              ? `bg-gradient-to-r from-${pathTypeInfo.color}-600 to-${pathTypeInfo.color}-700 hover:from-${pathTypeInfo.color}-700 hover:to-${pathTypeInfo.color}-800 text-white`
-                              : `bg-gradient-to-r from-sage-600 to-sage-700 hover:from-sage-700 hover:to-sage-800 text-white`
+                              ? `bg-gradient-to-r ${colorClasses.buttonGradient} text-white`
+                              : 'bg-gradient-to-r from-sage-600 to-sage-700 hover:from-sage-700 hover:to-sage-800 text-white'
                           }`}
                         >
                           {!path.prerequisites_met
