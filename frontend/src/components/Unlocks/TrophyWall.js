@@ -167,6 +167,12 @@ const TrophyWall = () => {
             celebration: result.celebration
           });
           
+          // Show unlock notification
+          showUnlockNotification({
+            protection: result.protection,
+            celebration: result.celebration
+          });
+          
           // Refresh trophy wall and gamification data
           await loadTrophyWall();
           refreshGamificationData();
