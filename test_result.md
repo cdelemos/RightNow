@@ -299,6 +299,9 @@ backend:
       - working: "NA"
         agent: "main"
         comment: "Backend models and endpoints for Emergency SOS feature have been implemented. Models include EmergencyContact, EmergencyAlert, EmergencyResponse, LocationData, and QuickAccessTool. Backend endpoints include CRUD operations for emergency contacts, alert creation with notification system, quick access tools, and emergency guidance. Ready to implement frontend component."
+      - working: "NA"
+        agent: "main"
+        comment: "Fixed critical routing issue where emergency endpoints were defined inside initialize_learning_paths() function. Moved all emergency endpoints to module level and fixed serialization issues in get_emergency_contacts, get_emergency_alerts, and get_emergency_quick_tools endpoints. Backend restarted successfully."
 
 frontend:
   - task: "Authentication Context and State Management"
