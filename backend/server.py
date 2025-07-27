@@ -4116,7 +4116,7 @@ async def update_trophy_wall(user_id: str):
 
 # UPL Risk Flagging endpoints
 @api_router.post("/upl/check-query", response_model=APIResponse)
-async def check_upl_risk(
+async def check_query_upl_risk(
     query_data: Dict[str, Any],
     current_user: User = Depends(get_current_user)
 ):
