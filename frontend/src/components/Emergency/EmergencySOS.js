@@ -6,6 +6,7 @@ import axios from 'axios';
 const EmergencySOS = () => {
   const { user } = useAuth();
   const [isSOSOpen, setIsSOSOpen] = useState(false);
+  const [showCompassRose, setShowCompassRose] = useState(false);
   const [sosStep, setSOSStep] = useState('main'); // main, contacts, alert, confirmation
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [quickTools, setQuickTools] = useState([]);
