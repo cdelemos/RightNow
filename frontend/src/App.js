@@ -160,13 +160,6 @@ function App() {
                   </BookContainer>
                 </ProtectedRoute>
               } />
-              <Route path="/about" element={
-                <ProtectedRoute>
-                  <BookContainer>
-                    <AboutUs />
-                  </BookContainer>
-                </ProtectedRoute>
-              } />
               
               {/* Default redirect */}
               <Route path="/" element={<Navigate to="/dashboard" />} />
