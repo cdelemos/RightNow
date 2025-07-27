@@ -2271,6 +2271,15 @@ class BackendTester:
         self.test_learning_paths_system()
         self.test_user_progress_system()
         
+        # Advanced Learning Paths tests (NEW COMPREHENSIVE FEATURE)
+        print("\n🎓 ADVANCED LEARNING PATHS TESTS")
+        print("-" * 50)
+        self.test_advanced_learning_paths_system()
+        self.test_learning_path_personalization()
+        self.test_learning_path_progression()
+        self.test_learning_path_recommendations()
+        self.test_learning_path_database_initialization()
+        
         # Summary
         print("\n" + "=" * 70)
         print("📊 TEST SUMMARY")
