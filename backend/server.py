@@ -4183,11 +4183,17 @@ async def get_trophy_wall(current_user: User = Depends(get_current_user)):
         # Update trophy wall statistics
         await update_trophy_wall(current_user.id)
         
+        # Ensure trophy_wall is properly formatted
+        if isinstance(trophy_wall, dict):
+            trophy_wall_data = TrophyWall(**trophy_wall).dict()
+        else:
+            trophy_wall_data = trophy_wall.dict()
+        
         return APIResponse(
             success=True,
             message="Trophy wall retrieved successfully",
             data={
-                "trophy_wall": TrophyWall(**trophy_wall).dict(),
+                "trophy_wall": trophy_wall_data,
                 "unlocked_protections": protection_details,
                 "available_protections": available_protections_formatted
             }
