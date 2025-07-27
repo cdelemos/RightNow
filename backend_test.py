@@ -4162,7 +4162,7 @@ class BackendTester:
                 new_user_headers = {"Authorization": f"Bearer {new_user_token}"}
                 
                 # Test suggestions for new user
-                success, data, status_code = self.make_request("GET", "/ai/suggestions", new_user_headers=new_user_headers)
+                success, data, status_code = self.make_request("GET", "/ai/suggestions", headers=new_user_headers)
                 
                 if success and data.get("success"):
                     suggestions = data.get("data", {}).get("suggestions", [])
