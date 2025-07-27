@@ -2897,7 +2897,7 @@ async def get_learning_paths_filtered(
         # Enrich with user progress data
         enriched_paths = []
         for path in learning_paths:
-            path_dict = dict(path)
+            path_dict = clean_mongo_document(path)
             
             # Get user progress for this path
             user_progress = await db.user_learning_progress.find_one({
@@ -2906,12 +2906,13 @@ async def get_learning_paths_filtered(
             })
             
             if user_progress:
+                user_progress_clean = clean_mongo_document(user_progress)
                 path_dict["user_progress"] = {
-                    "completed_nodes": user_progress.get("completed_nodes", []),
-                    "current_node": user_progress.get("current_node"),
-                    "completion_percentage": user_progress.get("completion_percentage", 0),
-                    "started_at": user_progress.get("started_at"),
-                    "last_activity": user_progress.get("last_activity")
+                    "completed_nodes": user_progress_clean.get("completed_nodes", []),
+                    "current_node": user_progress_clean.get("current_node"),
+                    "completion_percentage": user_progress_clean.get("completion_percentage", 0),
+                    "started_at": user_progress_clean.get("started_at"),
+                    "last_activity": user_progress_clean.get("last_activity")
                 }
             else:
                 path_dict["user_progress"] = {
