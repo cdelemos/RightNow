@@ -248,7 +248,7 @@ const Register = () => {
                 to="/login"
                 className="font-medium text-forest-600 hover:text-forest-500 transition-colors duration-200"
               >
-                Already have an account? <span className="text-sage-700 font-semibold">Sign in!</span> 👋
+                Already have an account? <span className="text-forest-700 font-semibold">Sign in!</span> 👋
               </Link>
             </div>
           </form>
