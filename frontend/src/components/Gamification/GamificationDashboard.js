@@ -181,7 +181,7 @@ const GamificationDashboard = () => {
 
       {/* Recent Badges */}
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">🏆 Recent Badges</h3>
+        <h3 className="text-xl font-semibold text-book-leather mb-4">🏆 Recent Badges</h3>
         <div className="space-y-3">
           {badges?.slice(0, 5).map((badgeData, index) => (
             <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
