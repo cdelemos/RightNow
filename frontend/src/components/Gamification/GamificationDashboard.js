@@ -261,13 +261,13 @@ const GamificationDashboard = () => {
                   {entry.rank}
                 </div>
                 <div>
-                  <div className="font-medium text-gray-800">
+                  <div className="font-medium text-book-leather">
                     {entry.user.username}
                     {entry.user.id === user?.id && (
-                      <span className="ml-2 text-sm text-sage-600">(You)</span>
+                      <span className="ml-2 text-sm text-forest-600">(You)</span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-forest-600">
                     Level {entry.user.level} • {entry.user.badges?.length || 0} badges
                   </div>
                 </div>
