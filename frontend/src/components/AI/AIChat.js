@@ -53,6 +53,20 @@ const AIChat = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    // Check for UPL risk before sending
+    const riskAnalysis = analyzeQuery(inputMessage);
+    if (riskAnalysis) {
+      setUplRiskWarning({
+        ...riskAnalysis,
+        query: inputMessage
+      });
+      
+      // For high risk queries, don't send immediately
+      if (riskAnalysis.severity === 'high') {
+        return;
+      }
+    }
+
     const userMessage = {
       id: Date.now(),
       type: 'user',
@@ -112,6 +126,14 @@ const AIChat = () => {
       // Show state modal if required
       if (data.requires_state && !userState) {
         setShowStateModal(true);
+      }
+
+      // Show UPL warning if flagged by backend
+      if (data.upl_risk_flagged) {
+        setUplRiskWarning({
+          severity: data.upl_warning?.severity || 'medium',
+          query: currentMessage
+        });
       }
 
     } catch (error) {
