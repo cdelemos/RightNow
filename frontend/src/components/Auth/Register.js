@@ -115,7 +115,7 @@ const Register = () => {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-sage-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-forest-700 mb-2">
                   Email address
                 </label>
                 <input
@@ -124,7 +124,7 @@ const Register = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  className="w-full px-4 py-3 border border-forest-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent transition-all duration-200 bg-forest-50/50"
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={handleChange}
@@ -132,7 +132,7 @@ const Register = () => {
               </div>
 
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-sage-700 mb-2">
+                <label htmlFor="username" className="block text-sm font-medium text-forest-700 mb-2">
                   Username
                 </label>
                 <input
@@ -140,7 +140,7 @@ const Register = () => {
                   name="username"
                   type="text"
                   required
-                  className="w-full px-4 py-3 border border-sage-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-500 focus:border-transparent transition-all duration-200 bg-sage-50/50"
+                  className="w-full px-4 py-3 border border-forest-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent transition-all duration-200 bg-forest-50/50"
                   placeholder="Choose a username"
                   value={formData.username}
                   onChange={handleChange}
