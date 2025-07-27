@@ -191,6 +191,12 @@ const Navbar = () => {
           </div>
         </div>
       )}
+      
+      {/* Notification Panel */}
+      <NotificationPanel 
+        isOpen={isNotificationPanelOpen} 
+        onClose={() => setIsNotificationPanelOpen(false)} 
+      />
     </nav>
   );
 };
