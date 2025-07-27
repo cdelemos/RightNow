@@ -130,6 +130,7 @@ function App() {
           <ProtectedRoute>
             <EmergencySOS />
           </ProtectedRoute>
+        </BrowserRouter>
           </Routes>
         </BrowserRouter>
       </div>
