@@ -58,6 +58,24 @@ const PublicRoute = ({ children }) => {
   return !isAuthenticated ? children : <Navigate to="/dashboard" />;
 };
 
+// Public Access Route Component (accessible to everyone)
+const PublicAccessRoute = ({ children }) => {
+  const { loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-book-leather via-forest-900 to-book-leather flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-32 w-32 border-b-2 border-gold-600"></div>
+          <p className="mt-4 text-gold-200">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return children;
+};
+
 // Placeholder components for other routes with sage green theme
 
 
