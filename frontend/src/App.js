@@ -146,6 +146,7 @@ function App() {
           </ProtectedRoute>
         </BrowserRouter>
       </div>
+    </GamificationProvider>
     </AuthProvider>
   );
 }
