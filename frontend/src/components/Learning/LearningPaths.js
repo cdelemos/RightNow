@@ -391,9 +391,10 @@ const LearningPaths = () => {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {userProgress.filter(p => !p.is_completed).map((progress) => {
                     const pathTypeInfo = getPathTypeInfo(progress.path_type);
+                    const colorClasses = getPathTypeColorClasses(progress.path_type);
                     return (
                       <div key={progress.learning_path_id} className="bg-white rounded-3xl shadow-sage-lg border border-sage-100 overflow-hidden hover:shadow-sage-xl transition-shadow">
-                        <div className={`bg-gradient-to-r from-${pathTypeInfo.color}-400 to-${pathTypeInfo.color}-600 p-6 text-white`}>
+                        <div className={`bg-gradient-to-r ${colorClasses.gradient} p-6 text-white`}>
                           <div className="flex items-center justify-between mb-4">
                             <span className="text-3xl">{pathTypeInfo.emoji}</span>
                             <div className="bg-white bg-opacity-20 rounded-full px-3 py-1 text-xs font-medium">
@@ -410,7 +411,7 @@ const LearningPaths = () => {
                             </div>
                             <div className="w-full bg-sage-200 rounded-full h-3">
                               <div 
-                                className={`bg-gradient-to-r from-${pathTypeInfo.color}-400 to-${pathTypeInfo.color}-500 h-3 rounded-full transition-all duration-500`}
+                                className={`bg-gradient-to-r ${colorClasses.progressGradient} h-3 rounded-full transition-all duration-500`}
                                 style={{ width: `${progress.progress_percentage}%` }}
                               ></div>
                             </div>
@@ -422,7 +423,7 @@ const LearningPaths = () => {
                           </div>
                           <button
                             onClick={() => fetchPathDetail(progress.learning_path_id)}
-                            className={`w-full bg-gradient-to-r from-${pathTypeInfo.color}-600 to-${pathTypeInfo.color}-700 hover:from-${pathTypeInfo.color}-700 hover:to-${pathTypeInfo.color}-800 text-white font-bold py-3 px-6 rounded-2xl transition-all duration-200`}
+                            className={`w-full bg-gradient-to-r ${colorClasses.buttonGradient} text-white font-bold py-3 px-6 rounded-2xl transition-all duration-200`}
                           >
                             Continue Path →
                           </button>
