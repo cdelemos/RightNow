@@ -15,7 +15,10 @@ const AIChat = () => {
   const [suggestedScripts, setSuggestedScripts] = useState([]);
   const [xpGained, setXpGained] = useState(0);
   const [uplRiskWarning, setUplRiskWarning] = useState(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
   const messagesEndRef = useRef(null);
+  const memoryContextRef = useRef(null);
   const { user } = useAuth();
   const { analyzeQuery } = useUPLRiskDetection();
 
