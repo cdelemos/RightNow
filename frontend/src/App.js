@@ -25,10 +25,10 @@ const ProtectedRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-book-leather via-forest-900 to-book-leather flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-32 w-32 border-b-2 border-gold-600"></div>
+          <p className="mt-4 text-gold-200">Loading your legal journey...</p>
         </div>
       </div>
     );
@@ -43,10 +43,10 @@ const PublicRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-book-leather via-forest-900 to-book-leather flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-32 w-32 border-b-2 border-gold-600"></div>
+          <p className="mt-4 text-gold-200">Loading...</p>
         </div>
       </div>
     );
