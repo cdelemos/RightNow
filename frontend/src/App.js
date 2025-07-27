@@ -87,6 +87,7 @@ function App() {
                   <Register />
                 </PublicRoute>
               } />
+              <Route path="/about" element={<AboutUs />} />
               
               {/* Protected routes wrapped in BookContainer */}
               <Route path="/dashboard" element={
