@@ -4521,6 +4521,7 @@ async def startup_db_client():
     await initialize_legal_myths()
     await initialize_legal_simulations()
     await initialize_learning_paths()
+    await initialize_regional_protections()
 
 async def initialize_script_templates():
     """Initialize the database with common legal script templates"""
