@@ -138,11 +138,11 @@ const EmergencySOS = () => {
   const renderSOSButton = () => (
     <div className="fixed bottom-6 right-6 z-50">
       <button
-        onClick={() => setIsSOSOpen(true)}
+        onClick={() => setShowCompassRose(true)}
         className="bg-red-600 hover:bg-red-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse"
-        title="Emergency SOS"
+        title="Emergency Toolkit"
       >
-        <span className="text-2xl">🚨</span>
+        <span className="text-2xl">🧭</span>
       </button>
     </div>
   );
