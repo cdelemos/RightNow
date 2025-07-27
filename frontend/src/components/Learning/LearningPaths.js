@@ -16,6 +16,66 @@ const LearningPaths = () => {
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
   const API = `${BACKEND_URL}/api`;
 
+  const getPathTypeColorClasses = (pathType) => {
+    const colorClasses = {
+      tenant_protection: { 
+        gradient: 'from-blue-400 to-blue-600',
+        bgGradient: 'from-blue-50 to-blue-100',
+        progressGradient: 'from-blue-400 to-blue-500',
+        buttonGradient: 'from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+      },
+      immigration_rights: { 
+        gradient: 'from-green-400 to-green-600',
+        bgGradient: 'from-green-50 to-green-100',
+        progressGradient: 'from-green-400 to-green-500',
+        buttonGradient: 'from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'
+      },
+      student_rights: { 
+        gradient: 'from-purple-400 to-purple-600',
+        bgGradient: 'from-purple-50 to-purple-100',
+        progressGradient: 'from-purple-400 to-purple-500',
+        buttonGradient: 'from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800'
+      },
+      criminal_defense: { 
+        gradient: 'from-red-400 to-red-600',
+        bgGradient: 'from-red-50 to-red-100',
+        progressGradient: 'from-red-400 to-red-500',
+        buttonGradient: 'from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
+      },
+      employment_rights: { 
+        gradient: 'from-orange-400 to-orange-600',
+        bgGradient: 'from-orange-50 to-orange-100',
+        progressGradient: 'from-orange-400 to-orange-500',
+        buttonGradient: 'from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800'
+      },
+      consumer_protection: { 
+        gradient: 'from-cyan-400 to-cyan-600',
+        bgGradient: 'from-cyan-50 to-cyan-100',
+        progressGradient: 'from-cyan-400 to-cyan-500',
+        buttonGradient: 'from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800'
+      },
+      protest_rights: { 
+        gradient: 'from-pink-400 to-pink-600',
+        bgGradient: 'from-pink-50 to-pink-100',
+        progressGradient: 'from-pink-400 to-pink-500',
+        buttonGradient: 'from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800'
+      },
+      family_law: { 
+        gradient: 'from-emerald-400 to-emerald-600',
+        bgGradient: 'from-emerald-50 to-emerald-100',
+        progressGradient: 'from-emerald-400 to-emerald-500',
+        buttonGradient: 'from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800'
+      },
+      general_legal_literacy: { 
+        gradient: 'from-gray-400 to-gray-600',
+        bgGradient: 'from-gray-50 to-gray-100',
+        progressGradient: 'from-gray-400 to-gray-500',
+        buttonGradient: 'from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800'
+      }
+    };
+    return colorClasses[pathType] || colorClasses.general_legal_literacy;
+  };
+
   const pathTypeLabels = {
     tenant_protection: { label: 'Tenant Rights', emoji: '🏠', color: 'blue' },
     immigration_rights: { label: 'Immigration Rights', emoji: '🛡️', color: 'green' },
