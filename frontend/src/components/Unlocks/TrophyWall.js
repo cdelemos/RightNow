@@ -433,56 +433,53 @@ const TrophyWall = () => {
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">🎯 Available to Unlock</h2>
           
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <p className="text-gray-600 mb-4">
-              Complete more lessons and earn XP to unlock additional protections. Here are some examples:
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Sample protections - in real app, these would come from backend */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                <div className="flex items-center space-x-3 mb-2">
-                  <span className="text-2xl">🏠</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {trophyData?.available_protections?.map((protection) => (
+              <div key={protection.id} className="bg-white rounded-xl shadow-lg p-6 border-2 border-dashed border-gray-300">
+                <div className="flex items-center space-x-3 mb-3">
+                  <span className="text-2xl">{getProtectionTypeIcon(protection.protection_type)}</span>
                   <span className="text-gray-400">🔒</span>
                 </div>
-                <h4 className="font-medium text-gray-700">Tenant Right to Repair</h4>
-                <p className="text-sm text-gray-500 mb-2">
-                  California Civil Code §1942 - Right to withhold rent for repairs
-                </p>
-                <div className="text-xs text-gray-400">
-                  Requirements: Complete 3 housing lessons • Earn 150 XP
+                
+                <h3 className="font-bold text-gray-800 mb-2">{protection.statute_title}</h3>
+                <p className="text-sm text-gray-600 mb-3">{protection.protection_description}</p>
+                
+                <div className="flex justify-between items-center text-xs text-gray-500 mb-3">
+                  <span>{protection.state}</span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${getProtectionTypeColor(protection.protection_type)}`}>
+                    {protection.protection_type}
+                  </span>
                 </div>
+                
+                <div className="text-xs text-gray-400 mb-3">
+                  <div className="mb-1">
+                    Requirements: {protection.unlock_requirements.lessons_completed} lessons • {protection.unlock_requirements.xp_required} XP
+                  </div>
+                  <div className="text-xs">
+                    Progress: {Math.min(user?.xp || 0, protection.unlock_requirements.xp_required)}/{protection.unlock_requirements.xp_required} XP
+                  </div>
+                </div>
+                
                 <button
-                  onClick={() => attemptUnlock('sample-protection-1')}
-                  disabled={checkingUnlock === 'sample-protection-1'}
-                  className="mt-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg py-1 px-3 text-sm transition-colors disabled:opacity-50"
+                  onClick={() => attemptUnlock(protection.id)}
+                  disabled={checkingUnlock === protection.id}
+                  className="w-full mt-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg py-2 px-3 text-sm transition-colors disabled:opacity-50"
                 >
-                  {checkingUnlock === 'sample-protection-1' ? 'Checking...' : 'Check Requirements'}
+                  {checkingUnlock === protection.id ? 'Checking...' : 'Check Requirements'}
                 </button>
               </div>
-              
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                <div className="flex items-center space-x-3 mb-2">
-                  <span className="text-2xl">✊</span>
-                  <span className="text-gray-400">🔒</span>
-                </div>
-                <h4 className="font-medium text-gray-700">Protest Assembly Rights</h4>
-                <p className="text-sm text-gray-500 mb-2">
-                  1st Amendment - Right to peaceful assembly and protest
-                </p>
-                <div className="text-xs text-gray-400">
-                  Requirements: Complete 2 protest lessons • Earn 100 XP
-                </div>
-                <button
-                  onClick={() => attemptUnlock('sample-protection-2')}
-                  disabled={checkingUnlock === 'sample-protection-2'}
-                  className="mt-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg py-1 px-3 text-sm transition-colors disabled:opacity-50"
-                >
-                  {checkingUnlock === 'sample-protection-2' ? 'Checking...' : 'Check Requirements'}
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
+          
+          {(!trophyData?.available_protections || trophyData.available_protections.length === 0) && (
+            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+              <div className="text-6xl mb-4">🎯</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Available Protections</h3>
+              <p className="text-gray-600">
+                Keep learning to unlock more protections! Complete lessons and earn XP to discover new legal protections.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* User Progress */}
