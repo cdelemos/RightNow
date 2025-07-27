@@ -148,7 +148,7 @@ const GamificationDashboard = () => {
 
       {/* Streaks Card */}
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">🔥 Streaks</h3>
+        <h3 className="text-xl font-semibold text-book-leather mb-4">🔥 Streaks</h3>
         <div className="space-y-3">
           {streaks?.length > 0 ? (
             streaks.map((streak, index) => (
