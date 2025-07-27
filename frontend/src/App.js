@@ -210,10 +210,12 @@ function App() {
                   
                   <ProtectedRoute>
                     <MascotWidget position="bottom-left" />
+                    <ToastNotifications />
                   </ProtectedRoute>
                 </UnlockProvider>
               </GamificationProvider>
-            </AuthProvider>
+            </NotificationProvider>
+          </AuthProvider>
           } />
         </Routes>
       </BrowserRouter>
