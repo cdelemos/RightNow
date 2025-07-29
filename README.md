@@ -1,6 +1,19 @@
-# RightNow Legal Education Platform
+# RightNow AI-Powered Legal Education Platform
 
-A comprehensive legal education platform designed to democratize legal knowledge and empower communities through accessible, interactive learning.
+**Your Rights. Your Power. Right Now.**  
+An MVP-level civic tech platform built with GPT-4o, React 18, FastAPI, and MongoDB to democratize legal knowledge for Gen Z and underserved communities.
+
+## 🌟 Features
+- Real-time state statute lookup engine
+- Gamified legal lessons with XP and streaks
+- Emergency SOS radial toolkit
+- Scenario-based legal simulations
+- GPT-4o-powered legal assistant with UPL risk detection
+
+## 🧠 Tech Stack
+- Frontend: React 18, Tailwind CSS
+- Backend: FastAPI, MongoDB, JWT Auth
+- AI: OpenAI GPT-4o, Emergent AI
 
 ## 🚀 Quick Start
 
